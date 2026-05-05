@@ -20,6 +20,15 @@ dist/
 build/
 .next/
 out/
+.turbo/
+*.tsbuildinfo
+
+# Coverage / caches
+coverage/
+.cache/
+
+# Drizzle
+drizzle/.snapshots/
 
 # OS
 .DS_Store
