@@ -1,0 +1,31 @@
+# Local v0 archives — not published. See BRIEF.md §14, §16, §18, §20 for verbatim source.
+*.zip
+
+# Pitch deck — kept local
+BFS x JRJR - Framework.pdf
+
+# Node
+node_modules/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
