@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "noEmit": true,
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["@figma/plugin-typings"],
+    "paths": {
+      "@framework/types": ["../../packages/types/src"],
+      "@framework/types/*": ["../../packages/types/src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}

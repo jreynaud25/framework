@@ -1,0 +1,23 @@
+{
+  "name": "Framework",
+  "id": "framework-generator-v2",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "capabilities": [],
+  "menu": [
+    { "name": "Push to Framework", "command": "open" },
+    { "name": "Extract brand tokens", "command": "tokens" }
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://frame-work.app",
+      "https://*.frame-work.app",
+      "http://localhost:3000"
+    ],
+    "reasoning": "Sends extracted layout JSON and brand tokens to the Framework backend."
+  },
+  "permissions": ["currentuser"],
+  "documentAccess": "dynamic-page"
+}

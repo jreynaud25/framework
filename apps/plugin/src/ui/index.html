@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Framework</title>
+    <style>
+      :root {
+        color-scheme: dark light;
+        --bg: var(--figma-color-bg, #1e1e1e);
+        --fg: var(--figma-color-text, #fff);
+        --muted: var(--figma-color-text-secondary, rgba(255, 255, 255, 0.5));
+        --line: var(--figma-color-border, rgba(255, 255, 255, 0.1));
+        --accent: var(--figma-color-bg-brand, #ffffff);
+        --accent-fg: var(--figma-color-text-onbrand, #000000);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        height: 100vh;
+        overflow: hidden;
+      }
+      .app { display: flex; flex-direction: column; height: 100vh; }
+      header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      header h1 { margin: 0; font-size: 13px; letter-spacing: -0.01em; }
+      header .v { color: var(--muted); font-size: 11px; }
+      main { flex: 1; overflow: auto; padding: 16px; }
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 12px 16px;
+        display: flex; gap: 8px; justify-content: flex-end;
+      }
+      label { display: block; font-size: 11px; color: var(--muted); margin: 0 0 4px; }
+      input[type=text] {
+        width: 100%; background: transparent; color: var(--fg);
+        border: 1px solid var(--line); border-radius: 6px;
+        padding: 8px 10px; font: inherit;
+      }
+      input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .stack > * + * { margin-top: 12px; }
+      .frame {
+        border: 1px solid var(--line); border-radius: 6px;
+        padding: 8px 10px; display: flex; justify-content: space-between;
+        font-size: 12px;
+      }
+      .frame .dim { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .empty { color: var(--muted); font-size: 12px; }
+      .tabs { display: flex; gap: 4px; padding: 12px 16px 0; }
+      .tab {
+        padding: 6px 10px; border-radius: 6px; cursor: pointer;
+        color: var(--muted); font-size: 12px;
+      }
+      .tab[aria-selected=true] { color: var(--fg); background: var(--line); }
+      button {
+        font: inherit; padding: 8px 12px; border-radius: 6px;
+        border: 1px solid var(--line); background: transparent;
+        color: var(--fg); cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent); color: var(--accent-fg); border-color: var(--accent);
+      }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      .log {
+        margin-top: 12px; max-height: 120px; overflow: auto;
+        font-family: 'SF Mono', ui-monospace, monospace; font-size: 11px;
+        color: var(--muted); white-space: pre-wrap;
+      }
+      .log .err { color: #ff6e6e; }
+      .log .ok { color: #6ee7b7; }
+      details summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+      pre { font-size: 11px; max-height: 200px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Framework</h1>
+        <span class="v">v2</span>
+      </header>
+
+      <div class="tabs" role="tablist">
+        <div class="tab" role="tab" aria-selected="true" data-tab="template">Push template</div>
+        <div class="tab" role="tab" aria-selected="false" data-tab="tokens">Brand tokens</div>
+        <div class="tab" role="tab" aria-selected="false" data-tab="settings">Settings</div>
+      </div>
+
+      <main>
+        <section class="panel" data-panel="template">
+          <div class="stack">
+            <div>
+              <label for="brand">Push to</label>
+              <input id="brand" type="text" placeholder="brand-slug" />
+            </div>
+            <div>
+              <label for="name">Name</label>
+              <input id="name" type="text" placeholder="Spring Drop" />
+            </div>
+            <div>
+              <label>Selection</label>
+              <div id="selection" class="stack"><div class="empty">Select 1+ frames in Figma.</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="tokens" hidden>
+          <div class="stack">
+            <p class="empty">
+              Extract brand colors, typography and logos from local styles. Push them to your brand
+              hub at <code>{slug}.frame-work.app</code>.
+            </p>
+            <div>
+              <label for="brand-tokens">Push to</label>
+              <input id="brand-tokens" type="text" placeholder="brand-slug" />
+            </div>
+            <details><summary>Last preview</summary><pre id="tokens-preview"></pre></details>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="settings" hidden>
+          <div class="stack">
+            <div>
+              <label for="endpoint">API endpoint</label>
+              <input id="endpoint" type="text" value="https://frame-work.app" />
+            </div>
+            <p class="empty">
+              Use <code>http://localhost:3000</code> in dev. The plugin calls this host for
+              <code>/api/brand-tokens</code> and <code>/api/templates</code>.
+            </p>
+          </div>
+        </section>
+
+        <div id="log" class="log" aria-live="polite"></div>
+      </main>
+
+      <footer>
+        <button id="cancel">Close</button>
+        <button id="push" class="primary" disabled>Push</button>
+      </footer>
+    </div>
+
+    <script src="./main.ts" type="module"></script>
+  </body>
+</html>
