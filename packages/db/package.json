@@ -15,6 +15,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:migrate-from-mongo": "tsx scripts/migrate-from-mongo.ts",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'no lint configured'",
     "build": "echo 'db: source-only package'",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.28.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
 }
