@@ -1,56 +1,69 @@
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const APP_HOST = process.env.NEXT_PUBLIC_APP_HOST ?? 'frame-work.app'
 
+const isProtectedRoute = createRouteMatcher([
+  '/account(.*)',
+  '/admin(.*)',
+  '/designer(.*)',
+  '/templates/(.*)/edit(.*)',
+])
+
+const isWebhook = createRouteMatcher(['/api/clerk/webhook', '/api/stripe/webhook'])
+
 /**
- * Subdomain routing per BRIEF §3 / §10.4: tenant lives at
- *   {slug}.frame-work.app
+ * Two responsibilities, one middleware:
+ *   1. Tenant routing: parse `{slug}.frame-work.app`, set x-tenant-slug header.
+ *   2. Auth: gate /account, /admin, /designer behind Clerk.
  *
- * The middleware reads the subdomain, sets a `x-tenant-slug` header for
- * downstream handlers, and rewrites the marketing root paths into the
- * `(tenant)` route group when on a tenant host.
+ * Webhooks are explicitly opted out of auth.
  */
-export function middleware(req: NextRequest): NextResponse {
-  const host = req.headers.get('host') ?? ''
-  const url = req.nextUrl.clone()
+export default clerkMiddleware(async (auth, req: NextRequest) => {
+  const tenantHeaders = parseTenant(req)
+  const res = NextResponse.next({ headers: tenantHeaders })
 
-  const tenantSlug = parseTenantSlug(host)
-  const isMarketing = !tenantSlug || tenantSlug === 'www'
-
-  const res = NextResponse.next()
-  res.headers.set('x-host', host)
-
-  if (isMarketing) {
-    res.headers.set('x-surface', 'marketing')
-    return res
+  if (!isWebhook(req) && isProtectedRoute(req)) {
+    const a = await auth()
+    if (!a.userId) {
+      return NextResponse.redirect(new URL('/sign-in', req.url))
+    }
   }
 
-  res.headers.set('x-surface', 'tenant')
-  res.headers.set('x-tenant-slug', tenantSlug!)
-
-  // Rewrite '/'  →  '/(tenant)/'  so the tenant route group serves the path.
-  // Next.js route groups don't appear in the URL, so we just attach the slug
-  // header and let the (tenant) layout pick it up.
   return res
+})
+
+function parseTenant(req: NextRequest): Headers {
+  const h = new Headers(req.headers)
+  const host = req.headers.get('host') ?? ''
+  const slug = parseTenantSlug(host)
+  h.set('x-host', host)
+  if (slug && slug !== 'www') {
+    h.set('x-surface', 'tenant')
+    h.set('x-tenant-slug', slug)
+  } else {
+    h.set('x-surface', 'marketing')
+  }
+  return h
 }
 
 function parseTenantSlug(host: string): string | null {
-  // Strip port.
   const hostname = host.split(':')[0]
   if (!hostname) return null
-
-  // Allow localhost.tenant.localhost in dev: e.g. 3070.localhost:3000
   if (hostname.endsWith('.localhost')) {
     const slug = hostname.replace(/\.localhost$/, '')
     return slug || null
   }
-
   if (!hostname.endsWith(APP_HOST)) return null
   const sub = hostname.slice(0, -APP_HOST.length).replace(/\.$/, '')
-  if (!sub) return null
-  return sub
+  return sub || null
 }
 
 export const config = {
-  matcher: ['/((?!_next/|api/og|api/health|favicon|.*\\..*).*)'],
+  matcher: [
+    // Skip Next internals and static files
+    '/((?!_next/|.*\\..*).*)',
+    // Always run on API routes
+    '/(api|trpc)(.*)',
+  ],
 }
