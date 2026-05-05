@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "noEmit": true,
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "paths": {
+      "@framework/types": ["../types/src"],
+      "@framework/types/*": ["../types/src/*"]
+    }
+  },
+  "include": ["src/**/*", "drizzle.config.ts"]
+}
