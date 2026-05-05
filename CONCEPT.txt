@@ -1,0 +1,392 @@
+FRAMEWORK — UX CONCEPT
+======================
+
+A working draft. Plain text so I can edit it freely.
+Last updated: 2026-05-05.
+
+
+WHAT FRAMEWORK IS, IN ONE LINE
+------------------------------
+
+A web app where designers push their Figma designs and brand clients
+edit the content (text, images, colors) themselves — staying perfectly
+on brand because the layout, rules, and constraints come from the
+designer's Figma file.
+
+
+WHO USES IT
+-----------
+
+Three kinds of people. Each has a different relationship with the app.
+
+1. THE DESIGNER  (e.g. Basile, freelance or agency)
+   - Designs in Figma. Always.
+   - Has clients (brands) that need ongoing assets.
+   - Wants to give clients a way to make those assets themselves
+     without ruining the brand identity.
+   - Pays nothing on Framework. Earns 30% of every brand they bring.
+
+2. THE BRAND CLIENT  (e.g. 30 70 Agency, a luxury fashion brand, a museum)
+   - Has 1-to-many people who need to ship social posts, drop assets,
+     event posters, etc., on a recurring basis.
+   - These people are NOT designers. They're interns, social managers,
+     marketing assistants. They open Canva, not Figma.
+   - Pays Framework directly: €99 / €299 / custom per month.
+
+3. THE END USER inside the brand  (e.g. Pablo, the social manager)
+   - The actual day-to-day editor of assets.
+   - Wants the experience to feel as easy as Canva or Midjourney.
+   - Doesn't know or care about Figma. Has never opened it.
+
+
+THE FOUR SCENES
+===============
+
+
+SCENE 1 — DESIGNER PUSHES A DESIGN
+-----------------------------------
+
+Basile is in Figma. He just finished a "Spring Drop" template for
+30 70 Agency. Three frames in his file: 1:1, 9:16, 16:9 — same
+design, three formats.
+
+He selects the three frames on his canvas. Opens the Framework
+plugin from his Figma menu. Sees:
+
+   +-----------------------------------------+
+   |  Framework                              |
+   |                                         |
+   |  3 frames selected                      |
+   |   - Spring Drop / 1:1                   |
+   |   - Spring Drop / 9:16                  |
+   |   - Spring Drop / 16:9                  |
+   |                                         |
+   |  Push to:  [ 30 70 Agency        v ]    |
+   |  Name:     [ Spring Drop            ]   |
+   |                                         |
+   |          [    Push to Framework      ]  |
+   +-----------------------------------------+
+
+He clicks Push to Framework. ~30 seconds. Done.
+
+He did NOT need to:
+   - Name layers a special way
+   - Tag anything manually
+   - Set up a "Structure" frame
+   - Configure responsiveness rules
+   - Mark slots one by one
+
+The plugin figured out automatically:
+   - Every text node       = editable text slot
+   - Every image fill      = editable image slot
+   - Every brand-token color = swappable from the brand palette
+   - Brand mark / logo     = locked (clients can't change it)
+
+If Basile wants to override any default, he right-clicks a layer
+in Figma and picks "Lock for clients" or "Add constraint"
+(e.g. "max 80 characters", "auto-shrink"). Optional. Rarely needed.
+
+That's the entire designer experience. One button.
+
+
+SCENE 2 — CLIENT (PABLO) EDITS
+-------------------------------
+
+Pablo is the social manager at 30 70 Agency. He goes to:
+
+   3070.frame-work.app
+
+He's logged in (magic link from his email, no password). Lands on
+the brand hub — sees his brand's colors, fonts, logos, guidelines,
+in a clean Vevo-style portal.
+
+At the top of the page: CREATE button. He clicks it.
+
+He sees a grid of templates available to him. "Spring Drop" has a
+NEW badge. He clicks it.
+
+Editor opens. The design is rendered live in his browser:
+
+   +------------------------------------------------+
+   |  Spring Drop          [ Save ]  [ Export ]     |
+   |  Format: [ 1:1 ]  [ 9:16 ]  [ 16:9 ]           |
+   +------------------------------------------------+
+   |                                                |
+   |   +-------------------------+                  |
+   |   |                         |                  |
+   |   |   SPRING DROP 2026      |  <- click here   |
+   |   |   -----                 |     to edit text |
+   |   |   April 12 - 21         |                  |
+   |   |                         |                  |
+   |   |   [   model.jpg     ]   |  <- click here   |
+   |   |                         |     to swap image|
+   |   |                         |                  |
+   |   |   30 70 AGENCY          |  <- locked       |
+   |   +-------------------------+                  |
+   |                                                |
+   +------------------------------------------------+
+
+He clicks the title "SPRING DROP 2026". A cursor lands INLINE.
+No modal. He types "AUTUMN DROP 2026". The preview updates as
+he types — feels instant, no loading, no spinner.
+
+He clicks the photo. A drop zone appears. He drops a new image.
+The brand color-grade applies automatically (subtle warmth, the
+brand's signature contrast curve). The on-brand version replaces
+the placeholder.
+
+He toggles to 9:16. The same edits apply but the layout reflows
+for the vertical format. Basile designed all three formats; Pablo
+is just picking which one to use.
+
+He clicks Export. 2-3 seconds. PNG downloads.
+Or: he hits Save as draft and the work persists for later.
+
+WHAT PABLO CAN DO:
+   - Edit text (within constraints Basile set: max chars, etc.)
+   - Replace images (auto color-graded to brand)
+   - Pick from the brand palette for swappable colors
+   - Switch between formats
+   - Save drafts
+   - Export PNG, MP4 (if motion), SVG
+
+WHAT PABLO CANNOT DO:
+   - Change the layout
+   - Pick fonts outside the brand
+   - Use colors outside the palette
+   - Move elements around
+   - Break the brand identity in any way
+
+That's the magic. It feels open. It's actually locked tight.
+
+
+SCENE 3 — DESIGNER UPDATES THE DESIGN
+--------------------------------------
+
+Two weeks later. Basile reopens the Spring Drop Figma file. He
+moves the date below the title. Changes the type lockup. The
+brand's primary red shifts from #FF0033 to #E6002E.
+
+He selects the same frames. Clicks Push to Framework again.
+
+Meanwhile, Pablo had 8 drafts in progress. Next time he opens
+Framework, he sees a banner at the top:
+
+   "30 70 Agency updated 'Spring Drop'.   See what changed -> "
+
+He clicks. Side-by-side: before, after.
+His content is intact:
+   - "AUTUMN DROP" title is still there
+   - His photo is still there
+   - The new layout (date below title, new type lockup) is applied
+   - The new red color shows on his drafts
+
+He hits Apply. All 8 drafts updated to the new layout, all his
+content preserved.
+
+If something can't auto-merge — say Basile deleted a slot Pablo
+was using — the editor surfaces it gracefully:
+
+   "The 'Subtitle' field was removed by the designer.
+    Your text 'Limited Edition' is archived here in case you
+    want to use it."
+
+Nothing is ever lost. Everything is reversible.
+
+
+SCENE 4 — BRAND ADMIN REQUESTS CHANGES (THE FEEDBACK LOOP)
+-----------------------------------------------------------
+
+Sara is the founder of 30 70 Agency. She logs into Framework to
+review what Basile pushed. She likes most of it, but on the Spring
+Drop template she wants two changes:
+
+   1. The date feels too loud, should be lighter
+   2. The model photo placeholder needs more breathing room
+
+She opens the Spring Drop template in the hub. Hovers over the
+date text, clicks the comment icon. Types:
+
+   "The date is too heavy, can it be a lighter weight?"
+
+She pins the comment to the date layer and submits.
+Same flow for the photo: she pins a comment "Needs more padding
+around the image".
+
+Basile gets a notification on his designer dashboard:
+
+   "30 70 Agency — 2 new comments on Spring Drop"
+
+He clicks. Sees both comments pinned to specific elements with
+context. Opens the Figma file, makes the changes (date one weight
+lighter, more padding around photo), pushes again.
+
+Framework auto-detects which comments are addressed by the diff
+between v1 and v2:
+   - Date weight changed       -> comment 1 marked "addressed"
+   - Padding increased on photo -> comment 2 marked "addressed"
+
+Sara gets a notification: "Basile addressed your 2 comments on
+Spring Drop." She reviews the new version, hits Accept. Done.
+
+If Basile disagrees, he can reply directly inside Framework:
+
+   "I'd prefer to keep the date weight for hierarchy. Can we make
+    it darker instead?"
+
+Sara replies, conversation continues, until both agree. Standard
+async design feedback — pinned to the brand book and the
+templates rather than to a Figma file the brand can't even open.
+
+THE FEEDBACK LOOP IN ONE LINE:
+   Brand pins request -> Designer sees on dashboard -> Designer
+   pushes update from Figma -> Framework matches diff to comments
+   -> Brand approves -> Round closed.
+
+This makes Framework not just a one-way distribution tool but a
+shared workspace between designer and brand — without either of
+them leaving the tool they prefer.
+
+
+THE BRAND HUB
+=============
+
+Beside the editor, every brand has a "Brand Hub" — a portal at
+their subdomain (3070.frame-work.app). It's the brand book made
+interactive:
+
+   - Logo gallery       (downloadable in all formats)
+   - Color palette      (swatches, hex codes, copy-to-clipboard)
+   - Typography         (specimens, scale, downloadable WOFF2)
+   - Motion             (Lottie previews of motion principles)
+   - Voice              (tone, vocabulary, do's & don'ts)
+   - Imagery            (mood board, do's & don'ts)
+   - Templates          (what's available to create)
+   - Exports archive    (past creations by the client)
+   - Drafts             (in-progress work)
+
+The designer fills this with one Figma push. The client lands here
+when they need to remember what the brand is, or grab an asset.
+
+Every brand gets one. It's how the agency presents the brand
+professionally — a mini-Vevo for every brand.
+
+
+THE THREE PRINCIPLES
+====================
+
+1. DESIGNER NEVER LEAVES FIGMA
+   - Design happens where designers already work.
+   - One button away from publishing.
+   - Brand book + templates flow from the same source.
+   - Client feedback comes back to the designer's dashboard
+     and gets addressed in Figma. Round-trip stays Figma-native.
+
+2. CLIENT NEVER FEELS CONSTRAINED
+   - The interface feels like Canva.
+   - Edits are instant.
+   - But they CANNOT drift from the brand. The system protects them.
+
+3. UPDATES PROPAGATE WITHOUT DESTROYING WORK
+   - Designer changes the layout? Client's content survives.
+   - Brand color changes? Client's drafts auto-update.
+   - Slot removed? Content archived, never lost.
+
+
+THE THREE THINGS FRAMEWORK IS NOT
+=================================
+
+   - It is NOT a generative AI tool. The designer authors every
+     layout. AI is only used to validate (compliance check) and
+     treat images (color grade) — never to invent.
+
+   - It is NOT a template marketplace. Templates are made by the
+     brand's own designer, not borrowed from a generic library.
+
+   - It is NOT a Canva replacement. Canva is for everyone making
+     anything. Framework is for ONE brand making ITS thing.
+
+
+WHAT WE ARE BUILDING FIRST
+==========================
+
+The MVP is just the template generator pipeline. In order:
+
+   1. Designer's Figma plugin (Push to Framework)
+   2. The compile step (Figma -> React component)
+   3. The brand client editor (live editing, content only)
+   4. Multi-format support (1:1 / 9:16 / 16:9)
+   5. PNG export
+
+NOT in the MVP (later phases):
+   - Motion / video / Lottie
+   - AI compliance check
+   - Image treatment engine (color grade)
+   - Brand voice layer
+   - Public API
+   - Integrations (Buffer, Later, Shopify)
+
+The Brand Hub UI is needed for clients to land somewhere
+professional, but the editor is the heart of the product.
+
+
+THE TYPICAL DAY
+===============
+
+DESIGNER: opens Figma, designs three new templates, selects them,
+hits Push. Goes back to designing. Logs into Framework once a week
+to check that clients are using the templates.
+
+BRAND CLIENT (admin): logs into Framework when setting up the brand
+and periodically afterwards. Adds team members. Confirms the brand
+identity Basile pushed. Approves the rendered hub. Leaves pinned
+comments on templates when changes are needed — Basile sees them on
+his dashboard, addresses them in Figma, pushes the update.
+Framework closes the loop.
+
+BRAND CLIENT (end user / Pablo): opens Framework 3 times a week.
+Picks a template. Edits content. Exports. Done in under 5 minutes
+per asset.
+
+
+DECISIONS RESOLVED
+==================
+
+   1. Layout always lives in Figma.
+      The designer never edits content or layout from inside
+      Framework. Everything starts in Figma and pushes outward.
+      Inside Figma the designer decides:
+        a) Which content is SHARED across multiple templates
+           (e.g. "Drop date" appears identically on Spring Drop,
+           Summer Lookbook, and Autumn Drop — editing it once on
+           any template updates all three)
+        b) Which content is EDITABLE by the client
+        c) Which content is LOCKED (renders fixed, client cannot
+           touch it — e.g. legal disclaimer, brand mark)
+
+   2. Brand clients can be one person or a team.
+      Pricing scales with seats. A solo brand on the basic tier
+      is one seat; agencies invite their team and pay more as
+      they grow.
+
+   3. Team invites by email link.
+      Brand admin enters an email, recipient gets a magic-link
+      invite, lands directly on the brand's hub. More seats =
+      higher tier.
+
+   4. Naming stays "Framework".
+
+   5. Designer-side dashboard YES.
+      Designers see:
+        - Referral revenue (running total + monthly breakdown)
+        - Each brand client's activity (templates published,
+          assets exported, last login)
+        - Pipeline (brands they invited but haven't activated)
+
+
+STILL OPEN
+==========
+
+   - Marketing site: pricing public or behind a "Talk to us"
+     form? (Lean toward public for SMB-mid, hidden for the
+     custom Studio tier.)
