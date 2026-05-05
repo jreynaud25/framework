@@ -1,0 +1,38 @@
+{
+  "name": "@framework/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@framework/db": "workspace:*",
+    "@framework/renderer": "workspace:*",
+    "@framework/types": "workspace:*",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@clerk/nextjs": "^6.5.0",
+    "@vercel/og": "^0.6.3",
+    "drizzle-orm": "^0.36.4",
+    "next": "15.0.3",
+    "react": "19.0.0-rc-66855b96-20241106",
+    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "satori": "^0.11.2",
+    "stripe": "^17.4.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0-beta.6",
+    "@types/node": "^22.9.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.0.0-beta.6",
+    "typescript": "^5.6.3"
+  }
+}
