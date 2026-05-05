@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
+import { revalidateBrand } from '@/server/revalidate'
 
 /**
  * POST /api/brand-tokens
@@ -74,11 +75,20 @@ export async function POST(req: NextRequest) {
 
   // TODO(week 2): authenticate (Clerk), authorize (linked studio), insert
   // into brand_token_versions, bump version_number, write audit_log.
+
+  // ISR: punch the cached brand hub so the new tokens render on next request.
+  try {
+    revalidateBrand(parsed.data.brandSlug)
+  } catch (err) {
+    console.warn('[brand-tokens] revalidate failed', err)
+  }
+
   return NextResponse.json(
     {
       accepted: true,
       brandSlug: parsed.data.brandSlug,
       versionNumber: null,
+      revalidated: true,
     },
     { status: 202 },
   )

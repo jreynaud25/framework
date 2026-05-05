@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
+import { revalidateTemplate } from '@/server/revalidate'
 
 /**
  * POST /api/templates
@@ -37,12 +38,20 @@ export async function POST(req: NextRequest) {
   }
 
   // TODO(week 5–6): persist to templates + template_versions.
+
+  try {
+    revalidateTemplate(parsed.data.brandSlug, parsed.data.slug)
+  } catch (err) {
+    console.warn('[templates] revalidate failed', err)
+  }
+
   return NextResponse.json(
     {
       accepted: true,
       brandSlug: parsed.data.brandSlug,
       templateSlug: parsed.data.slug,
       versionNumber: null,
+      revalidated: true,
     },
     { status: 202 },
   )
