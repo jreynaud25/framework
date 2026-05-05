@@ -1,0 +1,32 @@
+{
+  "name": "@framework/editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'no lint configured'",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@framework/renderer": "workspace:*",
+    "@framework/types": "workspace:*",
+    "@tanstack/react-router": "^1.85.0",
+    "react": "^19.0.0-rc-66855b96-20241106",
+    "react-dom": "^19.0.0-rc-66855b96-20241106",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@tanstack/router-plugin": "^1.85.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0-beta.6",
+    "@tailwindcss/vite": "^4.0.0-beta.6",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}
