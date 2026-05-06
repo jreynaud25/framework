@@ -1,13 +1,24 @@
 import { loadDesignerDashboard } from '@/server/designer/dashboard'
+import { listTemplatesForDesigner, totalOpenCommentsForBrand } from '@/server/designer/store'
 import { DashboardHeader } from './_components/DashboardHeader'
 import { ReferralRevenueCard } from './_components/ReferralRevenueCard'
 import { BrandActivityTable } from './_components/BrandActivityTable'
 import { PipelineList } from './_components/PipelineList'
+import { TemplatesTable } from './_components/TemplatesTable'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DesignerDashboardPage() {
   const data = await loadDesignerDashboard()
+  const templates = listTemplatesForDesigner()
+
+  // Decorate brand-activity rows with the live open-comments count from
+  // the designer store.
+  const brandsWithComments = data.brands.map((b) => ({
+    ...b,
+    openComments: totalOpenCommentsForBrand(b.brandSlug),
+  }))
+
   return (
     <main className="min-h-dvh px-8 py-10">
       <DashboardHeader designerName={data.designerName} />
@@ -19,7 +30,11 @@ export default async function DesignerDashboardPage() {
           pendingCents={data.totals.pendingCents}
           currency={data.totals.currency}
         />
-        <Stat label="Active brands" value={String(data.totals.activeBrandCount)} hint={`${data.totals.activeUserCount} editors`} />
+        <Stat
+          label="Active brands"
+          value={String(data.totals.activeBrandCount)}
+          hint={`${data.totals.activeUserCount} editors`}
+        />
         <Stat
           label="Templates published"
           value={String(data.totals.templatesPublishedThisMonth)}
@@ -29,9 +44,23 @@ export default async function DesignerDashboardPage() {
 
       <section className="mt-10">
         <h2 className="font-display text-xl tracking-tight">Brand activity</h2>
-        <p className="mt-1 text-sm text-fw-muted">Last 30 days, sorted by recency.</p>
+        <p className="mt-1 text-sm text-fw-muted">
+          Last 30 days. Open client comments shown inline.
+        </p>
         <div className="mt-6">
-          <BrandActivityTable rows={data.brands} />
+          <BrandActivityTable rows={brandsWithComments} />
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-xl tracking-tight">Templates</h2>
+          <span className="text-xs text-fw-muted">
+            Configure editable slots, review client comments, archive
+          </span>
+        </div>
+        <div className="mt-6">
+          <TemplatesTable rows={templates} />
         </div>
       </section>
 

@@ -1,7 +1,11 @@
 import type { BrandActivityRow } from '@/server/designer/dashboard'
 
+interface Row extends BrandActivityRow {
+  openComments?: number
+}
+
 interface Props {
-  rows: BrandActivityRow[]
+  rows: Row[]
 }
 
 export function BrandActivityTable({ rows }: Props) {
@@ -13,6 +17,7 @@ export function BrandActivityTable({ rows }: Props) {
             <Th>Brand</Th>
             <Th right>Templates</Th>
             <Th right>Exports / mo</Th>
+            <Th right>Comments</Th>
             <Th right>MRR</Th>
             <Th right>Your share</Th>
             <Th right>Last login</Th>
@@ -23,10 +28,13 @@ export function BrandActivityTable({ rows }: Props) {
             <tr key={row.brandId} className="border-b border-fw-line last:border-0">
               <Td>
                 <div className="font-medium">{row.brandName}</div>
-                <div className="font-mono text-[11px] text-fw-muted">{row.brandSlug}.frame-work.app</div>
+                <div className="font-mono text-[11px] text-fw-muted">{row.brandSlug}</div>
               </Td>
               <Td right>{row.templatesPublished}</Td>
               <Td right>{row.exportsThisMonth}</Td>
+              <Td right>
+                <CommentsBadge count={row.openComments ?? 0} />
+              </Td>
               <Td right>{cents(row.mrrCents)}</Td>
               <Td right>
                 <span className="text-fw-fg">{cents(row.commissionCents)}</span>
@@ -38,6 +46,16 @@ export function BrandActivityTable({ rows }: Props) {
         </tbody>
       </table>
     </div>
+  )
+}
+
+function CommentsBadge({ count }: { count: number }) {
+  if (count === 0) return <span className="text-fw-muted">—</span>
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-300">
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+      {count} open
+    </span>
   )
 }
 
@@ -58,7 +76,11 @@ function Td({ children, right }: { children: React.ReactNode; right?: boolean })
 }
 
 function cents(c: number): string {
-  return new Intl.NumberFormat('en-EU', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(c / 100)
+  return new Intl.NumberFormat('en-EU', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(c / 100)
 }
 
 function relative(iso: string | null): string {
