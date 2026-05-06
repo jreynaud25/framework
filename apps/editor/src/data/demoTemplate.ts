@@ -38,7 +38,9 @@ const layout: LayoutNode = {
   type: 'frame',
   id: 'root',
   layout: { mode: 'vertical', padding: 80, gap: 24, justify: 'space-between', align: 'start' },
-  style: { background: 'colors.semantic.bg' },
+  // `slot:background` makes the canvas color editable from the brand
+  // palette via the slot inspector.
+  style: { background: 'slot:background' },
   children: [
     {
       type: 'text',
@@ -100,6 +102,13 @@ const layout: LayoutNode = {
 
 const slotSchema: SlotSchema = [
   {
+    type: 'color',
+    key: 'background',
+    label: 'Background',
+    constraints: { paletteOnly: true },
+    default: '#0A0A0A',
+  },
+  {
     type: 'text',
     key: 'kicker',
     label: 'Kicker',
@@ -130,6 +139,7 @@ const slotSchema: SlotSchema = [
 ]
 
 const defaultValues: SlotValues = {
+  background: { type: 'color', hex: '#0A0A0A' },
   kicker: { type: 'text', value: 'COLLECTION' },
   title: { type: 'text', value: 'SPRING DROP 2026' },
   date: { type: 'text', value: 'April 12 — 21' },

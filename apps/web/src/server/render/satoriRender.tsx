@@ -119,23 +119,26 @@ function frameEl(node: FrameNode, args: RenderArgs): React.ReactElement {
     .filter((c): c is React.ReactElement => c !== null)
     .map((el, i) => React.cloneElement(el, { key: `${node.id}-${i}` }))
 
-  return React.createElement(
-    'div',
-    {
-      key: node.id,
-      style: {
-        ...resolveBoxStyle(node.style, args.tokens),
-        ...flexStyle,
-        paddingTop: padding[0],
-        paddingRight: padding[1],
-        paddingBottom: padding[2],
-        paddingLeft: padding[3],
-        width: node.style?.width ?? '100%',
-        height: node.style?.height ?? '100%',
-      },
-    },
-    ...children,
-  )
+  const style: Record<string, unknown> = stripUndefined({
+    ...resolveBoxStyle(node.style, args.tokens, args.slotValues),
+    ...flexStyle,
+    paddingTop: padding[0],
+    paddingRight: padding[1],
+    paddingBottom: padding[2],
+    paddingLeft: padding[3],
+    width: node.style?.width ?? '100%',
+    height: node.style?.height ?? '100%',
+  })
+
+  return React.createElement('div', { key: node.id, style }, ...children)
+}
+
+function stripUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const k of Object.keys(obj)) {
+    if (obj[k] !== undefined) out[k] = obj[k]
+  }
+  return out
 }
 
 function textEl(node: TextNode, args: RenderArgs): React.ReactElement {
@@ -146,27 +149,26 @@ function textEl(node: TextNode, args: RenderArgs): React.ReactElement {
   const fontWeight = node.style.fontWeight ?? styleEntry?.defaultWeight ?? 400
   const lineHeight = node.style.lineHeight ?? styleEntry?.lineHeight ?? 1.2
   const color =
-    resolveColor(node.style.color, args.tokens) ?? args.tokens.colors.semantic?.fg ?? '#000000'
+    resolveColor(node.style.color, args.tokens, args.slotValues) ??
+    args.tokens.colors.semantic?.fg ??
+    '#000000'
 
-  return React.createElement(
-    'div',
-    {
-      key: node.id,
-      style: {
-        fontFamily: styleEntry?.fontFamily ?? DEFAULT_FONT_FAMILY,
-        fontSize,
-        fontWeight,
-        lineHeight,
-        letterSpacing: node.style.letterSpacing ?? styleEntry?.letterSpacing ?? 0,
-        color,
-        textAlign: node.style.align,
-        textTransform: node.style.textTransform,
-        fontStyle: node.style.fontStyle,
-        display: 'flex',
-      },
-    },
-    text,
-  )
+  // Satori chokes on `undefined` CSS values (it calls `.trim()` while
+  // parsing). Build the style object with only defined props.
+  const style: Record<string, unknown> = {
+    fontFamily: styleEntry?.fontFamily ?? DEFAULT_FONT_FAMILY,
+    fontSize,
+    fontWeight,
+    lineHeight,
+    letterSpacing: node.style.letterSpacing ?? styleEntry?.letterSpacing ?? 0,
+    color,
+    display: 'flex',
+  }
+  if (node.style.align) style.textAlign = node.style.align
+  if (node.style.textTransform) style.textTransform = node.style.textTransform
+  if (node.style.fontStyle) style.fontStyle = node.style.fontStyle
+
+  return React.createElement('div', { key: node.id, style }, text)
 }
 
 function imageEl(node: ImageNode, args: RenderArgs): React.ReactElement {

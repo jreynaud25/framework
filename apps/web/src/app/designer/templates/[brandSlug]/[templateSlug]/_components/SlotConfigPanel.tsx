@@ -10,9 +10,7 @@ interface Props {
   slots: SlotDefinition[]
 }
 
-interface SlotState extends SlotDefinition {
-  locked: boolean
-}
+type SlotState = SlotDefinition & { locked: boolean }
 
 export function SlotConfigPanel({ brandSlug, templateSlug, slots }: Props) {
   const initial = useMemo<SlotState[]>(
@@ -26,7 +24,10 @@ export function SlotConfigPanel({ brandSlug, templateSlug, slots }: Props) {
   const dirty = JSON.stringify(state) !== JSON.stringify(initial)
 
   function update(idx: number, patch: Partial<SlotState>) {
-    setState((s) => s.map((x, i) => (i === idx ? { ...x, ...patch } : x)))
+    setState((s) =>
+      // Slot is a discriminated union; keep the type tag stable while merging.
+      s.map((x, i) => (i === idx ? ({ ...x, ...patch } as SlotState) : x)),
+    )
   }
 
   function save() {
@@ -83,16 +84,9 @@ export function SlotConfigPanel({ brandSlug, templateSlug, slots }: Props) {
                 </Td>
                 <Td right>
                   <Toggle
-                    checked={'required' in slot.constraints && Boolean(slot.constraints.required)}
+                    checked={Boolean(getRequired(slot))}
                     disabled={slot.type === 'choice'}
-                    onChange={(checked) =>
-                      update(i, {
-                        constraints: {
-                          ...slot.constraints,
-                          required: checked,
-                        } as SlotDefinition['constraints'],
-                      })
-                    }
+                    onChange={(checked) => update(i, setRequired(slot, checked) as Partial<SlotState>)}
                   />
                 </Td>
                 <Td right>
@@ -120,6 +114,21 @@ export function SlotConfigPanel({ brandSlug, templateSlug, slots }: Props) {
       </div>
     </div>
   )
+}
+
+function getRequired(slot: SlotDefinition): boolean {
+  if (slot.type === 'text' || slot.type === 'image') return Boolean(slot.constraints.required)
+  return false
+}
+
+function setRequired(slot: SlotDefinition, value: boolean): Partial<SlotDefinition> {
+  if (slot.type === 'text') {
+    return { constraints: { ...slot.constraints, required: value } } as Partial<SlotDefinition>
+  }
+  if (slot.type === 'image') {
+    return { constraints: { ...slot.constraints, required: value } } as Partial<SlotDefinition>
+  }
+  return {}
 }
 
 function SlotConstraintsEditor({

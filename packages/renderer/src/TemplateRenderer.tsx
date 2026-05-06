@@ -56,6 +56,14 @@ export function TemplateRenderer({
   mode = 'preview',
 }: TemplateRendererProps): React.ReactElement {
   const dims = formatToDimensions(format, baseSize)
+  // Resolve the canvas-level background — slot:background takes precedence
+  // over the brand's semantic.bg so the brand client can recolor the canvas
+  // from a palette swatch.
+  const slotBg = slotValues['background']
+  const bg =
+    slotBg?.type === 'color'
+      ? slotBg.hex
+      : (tokens.colors.semantic?.bg ?? '#ffffff')
   return (
     <div
       data-framework-root
@@ -64,7 +72,7 @@ export function TemplateRenderer({
         height: dims.height,
         position: 'relative',
         overflow: 'hidden',
-        background: tokens.colors.semantic?.bg ?? '#ffffff',
+        background: bg,
       }}
     >
       <NodeRenderer
@@ -130,7 +138,7 @@ function FrameRenderer({
     <div
       data-framework-id={node.id}
       style={{
-        ...resolveBoxStyle(node.style, tokens),
+        ...resolveBoxStyle(node.style, tokens, slotValues),
         ...flexStyle,
         paddingTop: padding[0],
         paddingRight: padding[1],

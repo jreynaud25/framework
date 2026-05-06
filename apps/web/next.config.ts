@@ -7,9 +7,11 @@ initOpenNextCloudflareForDev()
 
 const config: NextConfig = {
   reactStrictMode: true,
-  experimental: {
-    typedRoutes: true,
-  },
+  typedRoutes: true,
+  // resvg-js + satori ship native + WASM binaries that webpack can't
+  // bundle. Mark them as Node externals so they load via require() at
+  // runtime instead.
+  serverExternalPackages: ['@resvg/resvg-js', 'satori'],
   transpilePackages: ['@framework/db', '@framework/renderer', '@framework/types'],
   // Cloudflare R2 + Cloudflare Images origin (set per environment)
   images: {

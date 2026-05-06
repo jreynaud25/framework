@@ -3,6 +3,7 @@ import type {
   BrandTokens,
   Format,
   HexColor,
+  SlotValues,
   TextStyle,
   TypographyEntry,
 } from '@framework/types'
@@ -26,11 +27,22 @@ export function formatToDimensions(format: Format, base = FORMAT_BASE): FormatDi
  * Resolve a color reference. Accepts:
  *   - hex: '#FF0033'
  *   - token reference: 'colors.primary' | 'colors.semantic.bg' | 'colors.palette.brand-red'
+ *   - slot reference: 'slot:background' — looks up slotValues[key].hex
  *   - css name fallthrough
  */
-export function resolveColor(ref: string | undefined, tokens: BrandTokens): string | undefined {
+export function resolveColor(
+  ref: string | undefined,
+  tokens: BrandTokens,
+  slotValues?: SlotValues,
+): string | undefined {
   if (!ref) return undefined
   if (ref.startsWith('#')) return ref
+  if (ref.startsWith('slot:') && slotValues) {
+    const key = ref.slice(5)
+    const v = slotValues[key]
+    if (v?.type === 'color') return v.hex
+    return undefined
+  }
   if (!ref.startsWith('colors.')) return ref
 
   const path = ref.split('.').slice(1)
@@ -99,18 +111,22 @@ export function resolveTextStyle(
   return base
 }
 
-export function resolveBoxStyle(style: BoxStyle | undefined, tokens: BrandTokens): React.CSSProperties {
+export function resolveBoxStyle(
+  style: BoxStyle | undefined,
+  tokens: BrandTokens,
+  slotValues?: SlotValues,
+): React.CSSProperties {
   if (!style) return {}
   const out: React.CSSProperties = {}
   if (style.width !== undefined) out.width = style.width
   if (style.height !== undefined) out.height = style.height
   if (style.background) {
-    const bg = resolveColor(style.background, tokens)
+    const bg = resolveColor(style.background, tokens, slotValues)
     if (bg) out.background = bg
   }
   if (style.borderRadius !== undefined) out.borderRadius = style.borderRadius
   if (style.border) {
-    const c = resolveColor(style.border.color, tokens) ?? style.border.color
+    const c = resolveColor(style.border.color, tokens, slotValues) ?? style.border.color
     out.border = `${style.border.width}px ${style.border.style ?? 'solid'} ${c}`
   }
   if (style.shadow) out.boxShadow = style.shadow

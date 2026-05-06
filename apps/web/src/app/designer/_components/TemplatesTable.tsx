@@ -20,7 +20,7 @@ export function TemplatesTable({ rows }: Props) {
             <Th right>Editable slots</Th>
             <Th right>Open comments</Th>
             <Th right>Published</Th>
-            <Th right></Th>
+            <Th right>{''}</Th>
           </tr>
         </thead>
         <tbody>

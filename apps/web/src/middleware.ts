@@ -15,17 +15,34 @@ const isWebhook = createRouteMatcher(['/api/clerk/webhook', '/api/stripe/webhook
 
 /**
  * Two responsibilities, one middleware:
- *   1. Tenant routing: parse `{slug}.{APP_HOST}`, set x-tenant-slug header.
+ *   1. Tenant routing: parse `{slug}.{APP_HOST}`, attach x-tenant-slug to
+ *      the request that the route handlers see.
  *   2. Auth: gate /account, /admin, /designer behind Clerk — only when
  *      CLERK_SECRET_KEY is configured. Without keys we run a pure
  *      tenant-routing middleware so the app boots locally with zero env.
+ *
+ * Tenant headers go to the *server-side request* via NextResponse.next({
+ * request: { headers } }), NOT to the response — otherwise the request's
+ * content-type leaks into the response and clobbers API content types.
  */
+function nextWithTenant(req: NextRequest): NextResponse {
+  const requestHeaders = new Headers(req.headers)
+  const host = req.headers.get('host') ?? ''
+  const slug = parseTenantSlug(host)
+  requestHeaders.set('x-host', host)
+  if (slug && slug !== 'www') {
+    requestHeaders.set('x-surface', 'tenant')
+    requestHeaders.set('x-tenant-slug', slug)
+  } else {
+    requestHeaders.set('x-surface', 'marketing')
+  }
+  return NextResponse.next({ request: { headers: requestHeaders } })
+}
 
-const tenantOnly = (req: NextRequest): NextResponse =>
-  NextResponse.next({ headers: parseTenant(req) })
+const tenantOnly = (req: NextRequest): NextResponse => nextWithTenant(req)
 
 const withClerk = clerkMiddleware(async (auth, req: NextRequest) => {
-  const res = NextResponse.next({ headers: parseTenant(req) })
+  const res = nextWithTenant(req)
   if (!isWebhook(req) && isProtectedRoute(req)) {
     const a = await auth()
     if (!a.userId) return NextResponse.redirect(new URL('/sign-in', req.url))
@@ -34,20 +51,6 @@ const withClerk = clerkMiddleware(async (auth, req: NextRequest) => {
 })
 
 export default HAS_CLERK ? withClerk : tenantOnly
-
-function parseTenant(req: NextRequest): Headers {
-  const h = new Headers(req.headers)
-  const host = req.headers.get('host') ?? ''
-  const slug = parseTenantSlug(host)
-  h.set('x-host', host)
-  if (slug && slug !== 'www') {
-    h.set('x-surface', 'tenant')
-    h.set('x-tenant-slug', slug)
-  } else {
-    h.set('x-surface', 'marketing')
-  }
-  return h
-}
 
 function parseTenantSlug(host: string): string | null {
   const hostname = host.split(':')[0]
