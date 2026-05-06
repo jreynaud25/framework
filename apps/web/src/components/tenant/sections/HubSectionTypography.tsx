@@ -2,7 +2,9 @@ import { HubSection } from './HubSection'
 import type { BrandLoaded } from '@/server/brand'
 
 export function HubSectionTypography({ brand }: { brand: BrandLoaded }) {
-  const roles = Object.entries(brand.tokens.typography)
+  const roles = Object.entries(brand.tokens.typography).filter(
+    (entry): entry is [string, NonNullable<(typeof entry)[1]>] => entry[1] !== undefined,
+  )
   return (
     <HubSection
       id="typography"

@@ -227,9 +227,10 @@ function solidFill(fills: readonly Paint[]): string | undefined {
   return undefined
 }
 
-function bgFromFigma(node: { backgrounds?: readonly Paint[]; fills?: readonly Paint[] }): string | undefined {
-  const bg = node.backgrounds ?? node.fills
-  if (!bg) return undefined
+function bgFromFigma(node: SceneNode): string | undefined {
+  const bg = ('backgrounds' in node ? node.backgrounds : undefined) ??
+    ('fills' in node ? node.fills : undefined)
+  if (!bg || typeof bg === 'symbol') return undefined
   return solidFill(bg as readonly Paint[])
 }
 

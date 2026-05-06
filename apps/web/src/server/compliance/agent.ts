@@ -115,13 +115,15 @@ export async function runComplianceCheck(input: ComplianceInput): Promise<Compli
   }
 
   const c = getClient()
-  const systemBlocks: Anthropic.MessageCreateParamsNonStreaming['system'] = [
+  // cache_control is a prompt-caching beta param; the SDK accepts it at runtime
+  // but the typed shape may lag. Cast when available, plain text fallback otherwise.
+  const systemBlocks = [
     {
-      type: 'text',
+      type: 'text' as const,
       text: brandComplianceSystemPrompt(input.brandName, input.tokens),
-      cache_control: { type: 'ephemeral' },
+      cache_control: { type: 'ephemeral' as const },
     },
-  ]
+  ] as unknown as Anthropic.MessageCreateParamsNonStreaming['system']
 
   const userText = JSON.stringify(
     {
@@ -157,7 +159,10 @@ export async function runComplianceCheck(input: ComplianceInput): Promise<Compli
 
   const llmFlags = extractToolFlags(response)
   const merged = dedupeFlags([...preFlags, ...llmFlags])
-  const usage = response.usage
+  const usage = response.usage as Anthropic.Usage & {
+    cache_read_input_tokens?: number
+    cache_creation_input_tokens?: number
+  }
   const inputTokens = usage.input_tokens ?? 0
   const outputTokens = usage.output_tokens ?? 0
   const cachedTokens = (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0)
@@ -198,7 +203,9 @@ function dedupeFlags(flags: ComplianceFlag[]): ComplianceFlag[] {
   return out
 }
 
-function computeCostMicros(usage: Anthropic.Usage): number {
+function computeCostMicros(
+  usage: Anthropic.Usage & { cache_read_input_tokens?: number },
+): number {
   const cachedRead = usage.cache_read_input_tokens ?? 0
   const fresh = (usage.input_tokens ?? 0) - cachedRead
   const out = usage.output_tokens ?? 0

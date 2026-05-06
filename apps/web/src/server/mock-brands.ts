@@ -46,7 +46,7 @@ const tokens3070: BrandTokens = {
     {
       name: '30 70 Wordmark',
       variant: 'wordmark',
-      r2Key: 'mock/3070/wordmark.svg',
+      r2Key: 'mock/3070/wordmark.svg' as never,
       clearSpaceMultiplier: 0.5,
       minSizePx: 48,
       allowedBackgrounds: ['*'],

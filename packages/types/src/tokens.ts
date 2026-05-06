@@ -37,7 +37,9 @@ export interface TypographyEntry {
   letterSpacing?: number
 }
 
-export type TypographyTokens = Record<TypographyRole, TypographyEntry>
+export type TypographyTokens = Partial<Record<TypographyRole, TypographyEntry>> & {
+  body: TypographyEntry
+}
 
 export interface SpacingTokens {
   unit: number

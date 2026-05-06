@@ -1,4 +1,5 @@
 import 'server-only'
+import * as React from 'react'
 import satori from 'satori'
 import type {
   BrandTokens,
@@ -55,26 +56,27 @@ function dimsFor(format: Format, base = FORMAT_BASE): Dims {
 export async function renderTemplateToSvg(args: RenderArgs): Promise<string> {
   const dims = dimsFor(args.format, args.baseSize ?? FORMAT_BASE)
   const tree = walk(args.layout, args)
-  return await satori(
-    {
-      type: 'div',
-      props: {
-        style: {
-          width: dims.width,
-          height: dims.height,
-          display: 'flex',
-          flexDirection: 'column',
-          background: args.tokens.colors.semantic?.bg ?? '#ffffff',
-          position: 'relative',
-        },
-        children: tree,
+  // Satori accepts a duck-typed React-like element. Cast to React.ReactNode
+  // because our shape isn't @types/react's ReactPortal but Satori is structural.
+  const root = {
+    type: 'div',
+    props: {
+      style: {
+        width: dims.width,
+        height: dims.height,
+        display: 'flex',
+        flexDirection: 'column',
+        background: args.tokens.colors.semantic?.bg ?? '#ffffff',
+        position: 'relative',
       },
+      children: tree,
     },
-    {
-      width: dims.width,
-      height: dims.height,
-      fonts: args.fonts,
-    },
+  }
+  return await satori(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    root as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { width: dims.width, height: dims.height, fonts: args.fonts as any },
   )
 }
 

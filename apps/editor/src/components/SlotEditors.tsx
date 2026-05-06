@@ -36,7 +36,7 @@ function SlotEditor({
   error,
 }: {
   slot: SlotDefinition
-  value: ReturnType<typeof useCompositionStore.getState>['slotValues'][string]
+  value: ReturnType<typeof useCompositionStore.getState>['slotValues'][string] | undefined
   error: SlotValidationError | undefined
 }) {
   switch (slot.type) {

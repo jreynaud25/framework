@@ -15,14 +15,14 @@
     "@framework/renderer": "workspace:*",
     "@framework/types": "workspace:*",
     "@tanstack/react-router": "^1.85.0",
-    "react": "^19.0.0-rc-66855b96-20241106",
-    "react-dom": "^19.0.0-rc-66855b96-20241106",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@tanstack/router-plugin": "^1.85.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.0.0-beta.6",
     "@tailwindcss/vite": "^4.0.0-beta.6",

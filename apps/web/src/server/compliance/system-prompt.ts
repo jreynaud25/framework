@@ -14,6 +14,7 @@ export function brandComplianceSystemPrompt(brandName: string, tokens: BrandToke
     .map((p) => `  - ${p.name}: ${p.hex}${p.usage ? ` (${p.usage})` : ''}`)
     .join('\n')
   const typography = Object.entries(tokens.typography)
+    .filter((e): e is [string, NonNullable<(typeof e)[1]>] => e[1] !== undefined)
     .map(
       ([role, t]) =>
         `  - ${role}: ${t.fontFamily}, weights [${t.weights.join(', ')}], default ${t.defaultWeight}, scale [${t.scale.join(', ')}]`,
