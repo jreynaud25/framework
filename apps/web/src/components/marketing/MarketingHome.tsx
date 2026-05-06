@@ -1,12 +1,6 @@
 import Link from 'next/link'
 
 const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
-const DEMO_BRAND_HOST =
-  process.env.NEXT_PUBLIC_APP_HOST === 'localhost'
-    ? 'http://3070.localhost:3000'
-    : process.env.NEXT_PUBLIC_APP_HOST
-      ? `https://3070.${process.env.NEXT_PUBLIC_APP_HOST}`
-      : '/'
 
 export function MarketingHome() {
   return (
@@ -59,8 +53,8 @@ export function MarketingHome() {
             recurring revenue.
           </p>
         </Link>
-        <a
-          href={DEMO_BRAND_HOST}
+        <Link
+          href="/brand"
           className="group block bg-fw-bg p-10 transition-colors hover:bg-fw-line/50"
         >
           <div className="text-xs uppercase tracking-widest text-fw-muted">Continue as</div>
@@ -69,7 +63,7 @@ export function MarketingHome() {
             Land on the demo Brand Hub for "30 70 Agency" — colors, type, logos, templates.
             Edit, export, ship.
           </p>
-        </a>
+        </Link>
       </section>
 
       <section className="grid grid-cols-1 gap-px bg-fw-line md:grid-cols-3">
