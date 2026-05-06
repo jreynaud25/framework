@@ -1,7 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const APP_HOST = process.env.NEXT_PUBLIC_APP_HOST ?? 'frame-work.app'
+const APP_HOST = process.env.NEXT_PUBLIC_APP_HOST ?? 'localhost'
+const HAS_CLERK = Boolean(process.env.CLERK_SECRET_KEY)
 
 const isProtectedRoute = createRouteMatcher([
   '/account(.*)',
@@ -14,24 +15,25 @@ const isWebhook = createRouteMatcher(['/api/clerk/webhook', '/api/stripe/webhook
 
 /**
  * Two responsibilities, one middleware:
- *   1. Tenant routing: parse `{slug}.frame-work.app`, set x-tenant-slug header.
- *   2. Auth: gate /account, /admin, /designer behind Clerk.
- *
- * Webhooks are explicitly opted out of auth.
+ *   1. Tenant routing: parse `{slug}.{APP_HOST}`, set x-tenant-slug header.
+ *   2. Auth: gate /account, /admin, /designer behind Clerk — only when
+ *      CLERK_SECRET_KEY is configured. Without keys we run a pure
+ *      tenant-routing middleware so the app boots locally with zero env.
  */
-export default clerkMiddleware(async (auth, req: NextRequest) => {
-  const tenantHeaders = parseTenant(req)
-  const res = NextResponse.next({ headers: tenantHeaders })
 
+const tenantOnly = (req: NextRequest): NextResponse =>
+  NextResponse.next({ headers: parseTenant(req) })
+
+const withClerk = clerkMiddleware(async (auth, req: NextRequest) => {
+  const res = NextResponse.next({ headers: parseTenant(req) })
   if (!isWebhook(req) && isProtectedRoute(req)) {
     const a = await auth()
-    if (!a.userId) {
-      return NextResponse.redirect(new URL('/sign-in', req.url))
-    }
+    if (!a.userId) return NextResponse.redirect(new URL('/sign-in', req.url))
   }
-
   return res
 })
+
+export default HAS_CLERK ? withClerk : tenantOnly
 
 function parseTenant(req: NextRequest): Headers {
   const h = new Headers(req.headers)
@@ -60,10 +62,5 @@ function parseTenantSlug(host: string): string | null {
 }
 
 export const config = {
-  matcher: [
-    // Skip Next internals and static files
-    '/((?!_next/|.*\\..*).*)',
-    // Always run on API routes
-    '/(api|trpc)(.*)',
-  ],
+  matcher: ['/((?!_next/|.*\\..*).*)', '/(api|trpc)(.*)'],
 }
