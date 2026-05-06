@@ -1,21 +1,40 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "moduleResolution": "Bundler",
     "jsx": "preserve",
     "noEmit": true,
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@framework/db": ["../../packages/db/src"],
-      "@framework/db/*": ["../../packages/db/src/*"],
-      "@framework/renderer": ["../../packages/renderer/src"],
-      "@framework/renderer/*": ["../../packages/renderer/src/*"],
-      "@framework/types": ["../../packages/types/src"],
-      "@framework/types/*": ["../../packages/types/src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ],
+      "@framework/db": [
+        "../../packages/db/src"
+      ],
+      "@framework/db/*": [
+        "../../packages/db/src/*"
+      ],
+      "@framework/renderer": [
+        "../../packages/renderer/src"
+      ],
+      "@framework/renderer/*": [
+        "../../packages/renderer/src/*"
+      ],
+      "@framework/types": [
+        "../../packages/types/src"
+      ],
+      "@framework/types/*": [
+        "../../packages/types/src/*"
+      ]
+    },
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",
@@ -23,5 +42,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next"]
+  "exclude": [
+    "node_modules",
+    ".next"
+  ]
 }

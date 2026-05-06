@@ -1,41 +1,53 @@
 import 'server-only'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 import type { SatoriFont } from './satoriRender'
 
-const FONT_CACHE = new Map<string, ArrayBuffer>()
+const FONT_CACHE = new Map<number, ArrayBuffer>()
 
 /**
  * Resolve fonts for a Satori render call.
  *
- * For Phase 1 we ship Inter from the Google Fonts CDN. As BRIEF §3.3 lays
- * out, brand-specific fonts (Adobe Fonts, self-hosted licensed fonts) get
- * subsetted at render time to the exact glyphs in the composition. That
- * subsetting is a Phase 1.5 task; for the MVP we serve the full Inter file
- * and rely on Satori's text-on-image fallback when glyphs are missing.
+ * Reads Inter (Regular / SemiBold / ExtraBold) WOFF files committed to
+ * `apps/web/public/fonts/`. Public assets ship with the deploy, so this
+ * works the same in `next dev`, `next start`, and on Cloudflare Workers
+ * (the OpenNext adapter bundles `public/` as worker assets).
+ *
+ * Brand-specific fonts (Adobe, self-hosted licensed) get subsetted at
+ * render time per BRIEF §3.3 — Phase 1.5 work.
+ *
+ * Failures degrade gracefully: log + return empty array, Satori still
+ * renders (text falls back to system).
  */
 export async function loadDefaultFonts(): Promise<SatoriFont[]> {
-  const inter400 = await loadInter(400)
-  const inter600 = await loadInter(600)
-  const inter800 = await loadInter(800)
-  return [
-    { name: 'Inter', data: inter400, weight: 400, style: 'normal' },
-    { name: 'Inter', data: inter600, weight: 600, style: 'normal' },
-    { name: 'Inter', data: inter800, weight: 800, style: 'normal' },
-  ]
+  try {
+    const [r400, r600, r800] = await Promise.all([
+      loadInter(400),
+      loadInter(600),
+      loadInter(800),
+    ])
+    return [
+      { name: 'Inter', data: r400, weight: 400, style: 'normal' },
+      { name: 'Inter', data: r600, weight: 600, style: 'normal' },
+      { name: 'Inter', data: r800, weight: 800, style: 'normal' },
+    ]
+  } catch (err) {
+    console.warn('[fonts] failed to load Inter, rendering without text', err)
+    return []
+  }
 }
 
-const INTER_URLS: Record<number, string> = {
-  400: 'https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Regular.otf',
-  600: 'https://github.com/rsms/inter/raw/master/docs/font-files/Inter-SemiBold.otf',
-  800: 'https://github.com/rsms/inter/raw/master/docs/font-files/Inter-ExtraBold.otf',
-}
-
-async function loadInter(weight: number): Promise<ArrayBuffer> {
-  const url = INTER_URLS[weight]!
-  const cached = FONT_CACHE.get(url)
+async function loadInter(weight: 400 | 600 | 800): Promise<ArrayBuffer> {
+  const cached = FONT_CACHE.get(weight)
   if (cached) return cached
-  const res = await fetch(url, { cache: 'force-cache' })
-  if (!res.ok) throw new Error(`Failed to load Inter ${weight}: ${res.status}`)
-  const buf = await res.arrayBuffer()
-  FONT_CACHE.set(url, buf)
-  return buf
+  const filePath = path.join(
+    process.cwd(),
+    'public',
+    'fonts',
+    `inter-latin-${weight}-normal.woff`,
+  )
+  const buf = await readFile(filePath)
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
+  FONT_CACHE.set(weight, ab)
+  return ab
 }

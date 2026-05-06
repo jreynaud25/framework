@@ -1,6 +1,7 @@
-import Link from 'next/link'
 import { HubSection } from './HubSection'
 import type { BrandLoaded } from '@/server/brand'
+
+const EDITOR_URL = process.env.NEXT_PUBLIC_EDITOR_URL ?? 'http://localhost:3001'
 
 export function HubSectionTemplates({ brand }: { brand: BrandLoaded }) {
   return (
@@ -12,9 +13,9 @@ export function HubSectionTemplates({ brand }: { brand: BrandLoaded }) {
     >
       <div className="grid grid-cols-1 gap-px bg-fw-line md:grid-cols-2">
         {brand.templates.map((tpl) => (
-          <Link
+          <a
             key={tpl.id}
-            href={`/templates/${tpl.slug}`}
+            href={`${EDITOR_URL}/c/${tpl.slug}`}
             className="group relative aspect-[4/3] overflow-hidden bg-fw-bg p-6"
           >
             <div className="flex h-full flex-col justify-between">
@@ -33,7 +34,7 @@ export function HubSectionTemplates({ brand }: { brand: BrandLoaded }) {
               </div>
               <div className="text-sm text-fw-muted group-hover:text-fw-fg">Open editor →</div>
             </div>
-          </Link>
+          </a>
         ))}
       </div>
     </HubSection>

@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack -p 3000",
+    "dev": "next dev -p 3000",
+    "dev:turbo": "next dev --turbopack -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
@@ -24,6 +25,7 @@
     "@react-email/components": "^0.0.31",
     "resend": "^4.0.1",
     "svix": "^1.42.0",
+    "@fontsource/inter": "^5.1.0",
     "@opennextjs/cloudflare": "^1.0.0",
     "drizzle-orm": "^0.36.4",
     "next": "^15.2.3",

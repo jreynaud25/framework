@@ -1,5 +1,13 @@
 import Link from 'next/link'
 
+const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
+const DEMO_BRAND_HOST =
+  process.env.NEXT_PUBLIC_APP_HOST === 'localhost'
+    ? 'http://3070.localhost:3000'
+    : process.env.NEXT_PUBLIC_APP_HOST
+      ? `https://3070.${process.env.NEXT_PUBLIC_APP_HOST}`
+      : '/'
+
 export function MarketingHome() {
   return (
     <main className="relative min-h-dvh">
@@ -14,16 +22,18 @@ export function MarketingHome() {
           <Link href="/for-designers" className="hover:text-fw-fg">
             For designers
           </Link>
-          <Link
-            href="/sign-in"
-            className="rounded-full border border-fw-line px-4 py-1.5 text-fw-fg hover:bg-fw-fg hover:text-fw-bg"
-          >
-            Sign in
-          </Link>
+          {HAS_CLERK ? (
+            <Link
+              href="/sign-in"
+              className="rounded-full border border-fw-line px-4 py-1.5 text-fw-fg hover:bg-fw-fg hover:text-fw-bg"
+            >
+              Sign in
+            </Link>
+          ) : null}
         </nav>
       </header>
 
-      <section className="px-8 pb-24 pt-20">
+      <section className="px-8 pb-16 pt-20">
         <h1 className="max-w-4xl font-display text-5xl leading-[1.05] tracking-tight md:text-7xl">
           Hand-crafted in Figma.
           <br />
@@ -34,20 +44,32 @@ export function MarketingHome() {
           interface as fast and effortless as an AI tool — but every text, image, and color edit
           stays locked inside the brand identity the designer authored.
         </p>
-        <div className="mt-12 flex items-center gap-4">
-          <Link
-            href="/sign-up"
-            className="rounded-full bg-fw-fg px-6 py-3 text-sm font-medium text-fw-bg hover:opacity-90"
-          >
-            Start with your brand
-          </Link>
-          <Link
-            href="/for-designers"
-            className="rounded-full border border-fw-line px-6 py-3 text-sm font-medium text-fw-fg hover:bg-fw-line"
-          >
-            I'm a designer
-          </Link>
-        </div>
+      </section>
+
+      {/* Persona entry — no auth in dev. Replace with real sign-in flows later. */}
+      <section className="grid grid-cols-1 gap-px bg-fw-line md:grid-cols-2">
+        <Link
+          href="/designer"
+          className="group block bg-fw-bg p-10 transition-colors hover:bg-fw-line/50"
+        >
+          <div className="text-xs uppercase tracking-widest text-fw-muted">Continue as</div>
+          <div className="mt-2 font-display text-3xl tracking-tight">Designer →</div>
+          <p className="mt-3 max-w-md text-sm text-fw-muted">
+            See the designer dashboard: brands you brought, their activity, and your share of the
+            recurring revenue.
+          </p>
+        </Link>
+        <a
+          href={DEMO_BRAND_HOST}
+          className="group block bg-fw-bg p-10 transition-colors hover:bg-fw-line/50"
+        >
+          <div className="text-xs uppercase tracking-widest text-fw-muted">Continue as</div>
+          <div className="mt-2 font-display text-3xl tracking-tight">Brand →</div>
+          <p className="mt-3 max-w-md text-sm text-fw-muted">
+            Land on the demo Brand Hub for "30 70 Agency" — colors, type, logos, templates.
+            Edit, export, ship.
+          </p>
+        </a>
       </section>
 
       <section className="grid grid-cols-1 gap-px bg-fw-line md:grid-cols-3">

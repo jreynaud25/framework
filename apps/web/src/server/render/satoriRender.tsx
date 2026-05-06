@@ -36,6 +36,7 @@ interface Dims {
 }
 
 const FORMAT_BASE = 1080
+const DEFAULT_FONT_FAMILY = 'Inter'
 
 function dimsFor(format: Format, base = FORMAT_BASE): Dims {
   const [w, h] = format.split(':').map(Number) as [number, number]
@@ -47,20 +48,15 @@ function dimsFor(format: Format, base = FORMAT_BASE): Dims {
 /**
  * Server-side render path for PNG/SVG export.
  *
- * Satori only understands flexbox + a small subset of CSS, and it can't run
- * arbitrary React components. We therefore can't reuse <TemplateRenderer>
- * directly — it relies on raw `<div>` style props that Satori does support,
- * but also on `<img>` elements which Satori needs as data URLs or fetched
- * URLs. So we walk the same `LayoutNode` shape into a Satori-friendly tree.
+ * Satori only understands flexbox + a small subset of CSS. We walk the
+ * shared LayoutNode shape into React elements built with createElement
+ * so Satori's element-shape checks pass (`$$typeof`, `key`, etc).
  */
 export async function renderTemplateToSvg(args: RenderArgs): Promise<string> {
   const dims = dimsFor(args.format, args.baseSize ?? FORMAT_BASE)
-  const tree = walk(args.layout, args)
-  // Satori accepts a duck-typed React-like element. Cast to React.ReactNode
-  // because our shape isn't @types/react's ReactPortal but Satori is structural.
-  const root = {
-    type: 'div',
-    props: {
+  const root = React.createElement(
+    'div',
+    {
       style: {
         width: dims.width,
         height: dims.height,
@@ -68,24 +64,29 @@ export async function renderTemplateToSvg(args: RenderArgs): Promise<string> {
         flexDirection: 'column',
         background: args.tokens.colors.semantic?.bg ?? '#ffffff',
         position: 'relative',
+        fontFamily: DEFAULT_FONT_FAMILY,
       },
-      children: tree,
     },
-  }
-  return await satori(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    root as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { width: dims.width, height: dims.height, fonts: args.fonts as any },
+    walk(args.layout, args),
   )
+  try {
+    return await satori(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      root as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { width: dims.width, height: dims.height, fonts: args.fonts as any },
+    )
+  } catch (err) {
+    console.warn('[satori] render failed, returning placeholder', err)
+    return placeholderSvg(dims, args.tokens.colors.semantic?.bg ?? '#0a0a0a')
+  }
 }
 
-interface SatoriEl {
-  type: string
-  props: Record<string, unknown> & { children?: unknown }
+function placeholderSvg(dims: Dims, bg: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dims.width} ${dims.height}" width="${dims.width}" height="${dims.height}"><rect width="100%" height="100%" fill="${bg}"/></svg>`
 }
 
-function walk(node: LayoutNode, args: RenderArgs): SatoriEl | null {
+function walk(node: LayoutNode, args: RenderArgs): React.ReactElement | null {
   switch (node.type) {
     case 'frame':
       return frameEl(node, args)
@@ -100,9 +101,9 @@ function walk(node: LayoutNode, args: RenderArgs): SatoriEl | null {
   }
 }
 
-function frameEl(node: FrameNode, args: RenderArgs): SatoriEl {
+function frameEl(node: FrameNode, args: RenderArgs): React.ReactElement {
   const padding = normalizePadding(node.layout.padding)
-  const flexStyle: Record<string, unknown> =
+  const flexStyle: React.CSSProperties =
     node.layout.mode === 'absolute'
       ? { position: 'relative' }
       : {
@@ -113,9 +114,15 @@ function frameEl(node: FrameNode, args: RenderArgs): SatoriEl {
           justifyContent: justifyToFlex(node.layout.justify),
         }
 
-  return {
-    type: 'div',
-    props: {
+  const children = node.children
+    .map((c) => walk(c, args))
+    .filter((c): c is React.ReactElement => c !== null)
+    .map((el, i) => React.cloneElement(el, { key: `${node.id}-${i}` }))
+
+  return React.createElement(
+    'div',
+    {
+      key: node.id,
       style: {
         ...resolveBoxStyle(node.style, args.tokens),
         ...flexStyle,
@@ -126,27 +133,27 @@ function frameEl(node: FrameNode, args: RenderArgs): SatoriEl {
         width: node.style?.width ?? '100%',
         height: node.style?.height ?? '100%',
       },
-      children: node.children
-        .map((c) => walk(c, args))
-        .filter((c): c is SatoriEl => c !== null),
     },
-  }
+    ...children,
+  )
 }
 
-function textEl(node: TextNode, args: RenderArgs): SatoriEl {
+function textEl(node: TextNode, args: RenderArgs): React.ReactElement {
   const slot = node.slotKey ? args.slotValues[node.slotKey] : undefined
-  const text = slot?.type === 'text' ? slot.value : (node.defaultText ?? '')
+  const text = (slot?.type === 'text' ? slot.value : node.defaultText) ?? ''
   const styleEntry = node.style.tokenRef ? args.tokens.typography[node.style.tokenRef] : undefined
   const fontSize = node.style.fontSize ?? styleEntry?.scale[0] ?? 16
   const fontWeight = node.style.fontWeight ?? styleEntry?.defaultWeight ?? 400
   const lineHeight = node.style.lineHeight ?? styleEntry?.lineHeight ?? 1.2
-  const color = resolveColor(node.style.color, args.tokens) ?? args.tokens.colors.semantic?.fg ?? '#000000'
+  const color =
+    resolveColor(node.style.color, args.tokens) ?? args.tokens.colors.semantic?.fg ?? '#000000'
 
-  return {
-    type: 'div',
-    props: {
+  return React.createElement(
+    'div',
+    {
+      key: node.id,
       style: {
-        fontFamily: styleEntry?.fontFamily ?? 'Inter',
+        fontFamily: styleEntry?.fontFamily ?? DEFAULT_FONT_FAMILY,
         fontSize,
         fontWeight,
         lineHeight,
@@ -157,66 +164,57 @@ function textEl(node: TextNode, args: RenderArgs): SatoriEl {
         fontStyle: node.style.fontStyle,
         display: 'flex',
       },
-      children: text,
     },
-  }
+    text,
+  )
 }
 
-function imageEl(node: ImageNode, args: RenderArgs): SatoriEl {
+function imageEl(node: ImageNode, args: RenderArgs): React.ReactElement {
   const slot = node.slotKey ? args.slotValues[node.slotKey] : undefined
   const r2Key = slot?.type === 'image' ? (slot.treatedR2Key ?? slot.r2Key) : node.defaultR2Key
   if (!r2Key) {
-    return {
-      type: 'div',
-      props: {
-        style: {
-          ...resolveBoxStyle(node.style, args.tokens),
-          background: '#0001',
-        },
-      },
-    }
-  }
-  return {
-    type: 'img',
-    props: {
-      src: args.imageResolver(r2Key),
-      width: node.style.width,
-      height: node.style.height,
+    return React.createElement('div', {
+      key: node.id,
       style: {
         ...resolveBoxStyle(node.style, args.tokens),
-        objectFit: node.style.fit ?? 'cover',
-        borderRadius: node.style.radius ?? node.style.borderRadius,
+        background: '#0001',
       },
-    },
+    })
   }
+  return React.createElement('img', {
+    key: node.id,
+    src: args.imageResolver(r2Key),
+    width: node.style.width,
+    height: node.style.height,
+    style: {
+      ...resolveBoxStyle(node.style, args.tokens),
+      objectFit: node.style.fit ?? 'cover',
+      borderRadius: node.style.radius ?? node.style.borderRadius,
+    },
+  })
 }
 
-function shapeEl(node: ShapeNode, args: RenderArgs): SatoriEl {
-  const radius =
-    node.shape === 'circle' ? '9999px' : node.style.borderRadius
-  return {
-    type: 'div',
-    props: {
-      style: {
-        ...resolveBoxStyle(node.style, args.tokens),
-        borderRadius: radius,
-      },
+function shapeEl(node: ShapeNode, args: RenderArgs): React.ReactElement {
+  const radius = node.shape === 'circle' ? '9999px' : node.style.borderRadius
+  return React.createElement('div', {
+    key: node.id,
+    style: {
+      ...resolveBoxStyle(node.style, args.tokens),
+      borderRadius: radius,
     },
-  }
+  })
 }
 
-function logoEl(node: LogoNode, args: RenderArgs): SatoriEl | null {
+function logoEl(node: LogoNode, args: RenderArgs): React.ReactElement | null {
   const logo = args.tokens.logos.find((l) => l.variant === node.logoVariant) ?? args.tokens.logos[0]
   if (!logo) return null
-  return {
-    type: 'img',
-    props: {
-      src: args.imageResolver(logo.r2Key),
-      width: node.style?.width,
-      height: node.style?.height,
-      style: { objectFit: 'contain' },
-    },
-  }
+  return React.createElement('img', {
+    key: node.id,
+    src: args.imageResolver(logo.r2Key),
+    width: node.style?.width,
+    height: node.style?.height,
+    style: { objectFit: 'contain' },
+  })
 }
 
 function resolveColor(ref: string | undefined, tokens: BrandTokens): string | undefined {
@@ -233,9 +231,9 @@ function resolveColor(ref: string | undefined, tokens: BrandTokens): string | un
 function resolveBoxStyle(
   style: FrameNode['style'] | undefined,
   tokens: BrandTokens,
-): Record<string, unknown> {
+): React.CSSProperties {
   if (!style) return {}
-  const out: Record<string, unknown> = {}
+  const out: React.CSSProperties = {}
   if (style.width !== undefined) out.width = style.width
   if (style.height !== undefined) out.height = style.height
   if (style.background) {
@@ -247,7 +245,7 @@ function resolveBoxStyle(
   return out
 }
 
-function alignToFlex(a: FrameNode['layout']['align']): string {
+function alignToFlex(a: FrameNode['layout']['align']): React.CSSProperties['alignItems'] {
   switch (a) {
     case 'center':
       return 'center'
@@ -262,7 +260,7 @@ function alignToFlex(a: FrameNode['layout']['align']): string {
   }
 }
 
-function justifyToFlex(a: FrameNode['layout']['justify']): string {
+function justifyToFlex(a: FrameNode['layout']['justify']): React.CSSProperties['justifyContent'] {
   switch (a) {
     case 'center':
       return 'center'

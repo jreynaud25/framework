@@ -15,11 +15,15 @@ interface Props {
 export async function TenantHub({ slug }: Props) {
   const brand = await loadBrandBySlug(slug)
 
+  const appHost = process.env.NEXT_PUBLIC_APP_HOST ?? 'localhost'
+
   if (!brand) {
     return (
       <main className="min-h-dvh px-8 py-24">
         <h1 className="font-display text-4xl">Brand not found</h1>
-        <p className="mt-4 text-fw-muted">No tenant exists at "{slug}.frame-work.app".</p>
+        <p className="mt-4 text-fw-muted">
+          No tenant exists at "{slug}.{appHost}".
+        </p>
       </main>
     )
   }
@@ -37,8 +41,8 @@ export async function TenantHub({ slug }: Props) {
           >
             Create
           </Link>
-          <Link href="/account" className="text-fw-muted hover:text-fw-fg">
-            Account
+          <Link href="/admin/fonts" className="text-fw-muted hover:text-fw-fg">
+            Admin
           </Link>
         </nav>
       </header>
@@ -60,10 +64,7 @@ export async function TenantHub({ slug }: Props) {
       <HubSectionImagery brand={brand} />
 
       <footer className="fw-hairline mt-16 px-8 py-12 text-sm text-fw-muted">
-        Powered by{' '}
-        <Link href="https://frame-work.app" className="hover:text-fw-fg">
-          Framework
-        </Link>
+        Powered by Framework
       </footer>
     </main>
   )
