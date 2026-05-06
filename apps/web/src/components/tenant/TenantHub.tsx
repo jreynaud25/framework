@@ -36,7 +36,7 @@ export async function TenantHub({ slug }: Props) {
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link
-            href="/templates"
+            href={`/templates/${brand.slug}`}
             className="rounded-full border border-fw-line px-4 py-1.5 hover:bg-fw-line"
           >
             Create
