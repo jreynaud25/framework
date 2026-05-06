@@ -1,0 +1,2 @@
+# SPA fallback so TanStack Router routes work on direct URL hits.
+/*    /index.html   200

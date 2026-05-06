@@ -9,7 +9,10 @@
     "start": "next start -p 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next .turbo *.tsbuildinfo"
+    "clean": "rm -rf .next .turbo .open-next *.tsbuildinfo",
+    "build:cf": "opennextjs-cloudflare build",
+    "preview:cf": "opennextjs-cloudflare preview",
+    "deploy:cf": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@framework/db": "workspace:*",
@@ -21,7 +24,7 @@
     "@react-email/components": "^0.0.31",
     "resend": "^4.0.1",
     "svix": "^1.42.0",
-    "@vercel/og": "^0.6.3",
+    "@opennextjs/cloudflare": "^1.0.0",
     "drizzle-orm": "^0.36.4",
     "next": "^15.2.3",
     "react": "^19.0.3",
@@ -37,6 +40,7 @@
     "@types/react-dom": "^19.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.0.0-beta.6",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "wrangler": "^4.86.0"
   }
 }

@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "framework-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // KV namespaces — create in Cloudflare dashboard, then paste IDs here.
+  // OpenNext uses these for ISR and revalidateTag fan-out.
+  "kv_namespaces": [
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "<paste-incremental-cache-kv-id>"
+    },
+    {
+      "binding": "NEXT_TAG_CACHE_KV",
+      "id": "<paste-tag-cache-kv-id>"
+    }
+  ],
+  // R2 bucket binding (so server-side code can read/write without using
+  // the S3-compatible HTTP API).
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "framework"
+    }
+  ],
+  // Routes are set on the Worker via Cloudflare dashboard:
+  //   framework.parc.studio/*
+  //   *.framework.parc.studio/*
+  // Vars are set as Cloudflare secrets via `wrangler secret put` — see
+  // the deployment prompt for the full list.
+  "vars": {
+    "NEXT_PUBLIC_APP_HOST": "framework.parc.studio",
+    "NEXT_PUBLIC_APP_URL": "https://framework.parc.studio"
+  }
+}

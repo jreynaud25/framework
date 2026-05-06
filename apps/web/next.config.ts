@@ -1,4 +1,9 @@
 import type { NextConfig } from 'next'
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare'
+
+// Enable Cloudflare bindings (R2, KV) during `next dev` so local dev
+// matches production semantics. No-op in non-dev builds.
+initOpenNextCloudflareForDev()
 
 const config: NextConfig = {
   reactStrictMode: true,

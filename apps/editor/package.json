@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'no lint configured'",
-    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "deploy:cf": "wrangler pages deploy dist --project-name=framework-editor"
   },
   "dependencies": {
     "@framework/renderer": "workspace:*",
@@ -27,6 +28,7 @@
     "tailwindcss": "^4.0.0-beta.6",
     "@tailwindcss/vite": "^4.0.0-beta.6",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "wrangler": "^4.86.0"
   }
 }
