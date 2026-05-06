@@ -30,6 +30,13 @@ coverage/
 # Drizzle
 drizzle/.snapshots/
 
+# Wrangler / Cloudflare local state
+.wrangler/
+.open-next/
+
+# Local repro scratch files
+satori-*.mjs
+
 # OS
 .DS_Store
 Thumbs.db
