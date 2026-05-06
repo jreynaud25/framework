@@ -17,10 +17,13 @@
     {
       "binding": "NEXT_INC_CACHE_KV",
       "id": "<paste-incremental-cache-kv-id>"
-    },
+    }
+  ],
+  "d1_databases": [
     {
-      "binding": "NEXT_TAG_CACHE_KV",
-      "id": "<paste-tag-cache-kv-id>"
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "framework-tag-cache",
+      "database_id": "<paste-d1-database-id>"
     }
   ],
   // R2 bucket binding (so server-side code can read/write without using
