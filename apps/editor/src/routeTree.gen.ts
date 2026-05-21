@@ -15,6 +15,8 @@ import { Route as DIndexRouteImport } from './routes/d.index'
 import { Route as DNewRouteImport } from './routes/d.new'
 import { Route as CCompositionIdRouteImport } from './routes/c.$compositionId'
 import { Route as BBrandSlugRouteImport } from './routes/b.$brandSlug'
+import { Route as BBrandSlugIndexRouteImport } from './routes/b.$brandSlug.index'
+import { Route as BBrandSlugGuidelinesRouteImport } from './routes/b.$brandSlug.guidelines'
 
 const DRoute = DRouteImport.update({
   id: '/d',
@@ -46,30 +48,45 @@ const BBrandSlugRoute = BBrandSlugRouteImport.update({
   path: '/b/$brandSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BBrandSlugIndexRoute = BBrandSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BBrandSlugRoute,
+} as any)
+const BBrandSlugGuidelinesRoute = BBrandSlugGuidelinesRouteImport.update({
+  id: '/guidelines',
+  path: '/guidelines',
+  getParentRoute: () => BBrandSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/d': typeof DRouteWithChildren
-  '/b/$brandSlug': typeof BBrandSlugRoute
+  '/b/$brandSlug': typeof BBrandSlugRouteWithChildren
   '/c/$compositionId': typeof CCompositionIdRoute
   '/d/new': typeof DNewRoute
   '/d/': typeof DIndexRoute
+  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRoute
+  '/b/$brandSlug/': typeof BBrandSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/b/$brandSlug': typeof BBrandSlugRoute
   '/c/$compositionId': typeof CCompositionIdRoute
   '/d/new': typeof DNewRoute
   '/d': typeof DIndexRoute
+  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRoute
+  '/b/$brandSlug': typeof BBrandSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/d': typeof DRouteWithChildren
-  '/b/$brandSlug': typeof BBrandSlugRoute
+  '/b/$brandSlug': typeof BBrandSlugRouteWithChildren
   '/c/$compositionId': typeof CCompositionIdRoute
   '/d/new': typeof DNewRoute
   '/d/': typeof DIndexRoute
+  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRoute
+  '/b/$brandSlug/': typeof BBrandSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -80,8 +97,16 @@ export interface FileRouteTypes {
     | '/c/$compositionId'
     | '/d/new'
     | '/d/'
+    | '/b/$brandSlug/guidelines'
+    | '/b/$brandSlug/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/b/$brandSlug' | '/c/$compositionId' | '/d/new' | '/d'
+  to:
+    | '/'
+    | '/c/$compositionId'
+    | '/d/new'
+    | '/d'
+    | '/b/$brandSlug/guidelines'
+    | '/b/$brandSlug'
   id:
     | '__root__'
     | '/'
@@ -90,12 +115,14 @@ export interface FileRouteTypes {
     | '/c/$compositionId'
     | '/d/new'
     | '/d/'
+    | '/b/$brandSlug/guidelines'
+    | '/b/$brandSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DRoute: typeof DRouteWithChildren
-  BBrandSlugRoute: typeof BBrandSlugRoute
+  BBrandSlugRoute: typeof BBrandSlugRouteWithChildren
   CCompositionIdRoute: typeof CCompositionIdRoute
 }
 
@@ -143,6 +170,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BBrandSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/b/$brandSlug/': {
+      id: '/b/$brandSlug/'
+      path: '/'
+      fullPath: '/b/$brandSlug/'
+      preLoaderRoute: typeof BBrandSlugIndexRouteImport
+      parentRoute: typeof BBrandSlugRoute
+    }
+    '/b/$brandSlug/guidelines': {
+      id: '/b/$brandSlug/guidelines'
+      path: '/guidelines'
+      fullPath: '/b/$brandSlug/guidelines'
+      preLoaderRoute: typeof BBrandSlugGuidelinesRouteImport
+      parentRoute: typeof BBrandSlugRoute
+    }
   }
 }
 
@@ -158,10 +199,24 @@ const DRouteChildren: DRouteChildren = {
 
 const DRouteWithChildren = DRoute._addFileChildren(DRouteChildren)
 
+interface BBrandSlugRouteChildren {
+  BBrandSlugGuidelinesRoute: typeof BBrandSlugGuidelinesRoute
+  BBrandSlugIndexRoute: typeof BBrandSlugIndexRoute
+}
+
+const BBrandSlugRouteChildren: BBrandSlugRouteChildren = {
+  BBrandSlugGuidelinesRoute: BBrandSlugGuidelinesRoute,
+  BBrandSlugIndexRoute: BBrandSlugIndexRoute,
+}
+
+const BBrandSlugRouteWithChildren = BBrandSlugRoute._addFileChildren(
+  BBrandSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DRoute: DRouteWithChildren,
-  BBrandSlugRoute: BBrandSlugRoute,
+  BBrandSlugRoute: BBrandSlugRouteWithChildren,
   CCompositionIdRoute: CCompositionIdRoute,
 }
 export const routeTree = rootRouteImport

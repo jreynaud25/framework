@@ -1,4 +1,11 @@
-import type { PluginMessage, SelectionSummary, UIMessage } from '../types'
+import type {
+  ExtractedAsset,
+  ExtractMixedResult,
+  ExtractTemplateResult,
+  PluginMessage,
+  SelectionSummary,
+  UIMessage,
+} from '../types'
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T
 
@@ -251,6 +258,10 @@ window.addEventListener('message', (event: MessageEvent) => {
       void pushTemplate(data.payload)
       data.payload.warnings.forEach((w) => logLine(`! ${w}`))
       return
+    case 'extract-mixed-result':
+      void handleMixed(data.payload)
+      data.payload.warnings.forEach((w) => logLine(`! ${w}`))
+      return
     case 'error':
       logLine(`error: ${data.payload.message}`, 'err')
       return
@@ -315,8 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
   ;($('#push') as HTMLButtonElement).addEventListener('click', () => {
     if (activeTab === 'template') {
       const name = ($('#name') as HTMLInputElement).value.trim()
-      logLine(`▸ extracting template "${name || (selection?.frames[0]?.name.split('/')[0] ?? 'unnamed')}"…`)
-      postToCode({ type: 'request-extract-template', payload: { name } })
+      logLine('▸ classifying selection…')
+      postToCode({ type: 'request-extract-mixed', payload: { name } })
     } else if (activeTab === 'tokens') {
       logLine('▸ extracting brand tokens…')
       postToCode({ type: 'request-extract-tokens' })
@@ -328,7 +339,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ─────────────────────────────── Push ─────────────────────────────── */
 
-async function pushTemplate(payload: import('../types').ExtractTemplateResult): Promise<void> {
+async function handleMixed(payload: ExtractMixedResult): Promise<void> {
+  const brandSlug = selectedBrandSlug
+  if (!brandSlug) {
+    logLine('error: pick a brand first', 'err')
+    return
+  }
+  if (!payload.templateResult && payload.assets.length === 0) {
+    logLine('error: nothing to push — select a frame', 'err')
+    return
+  }
+
+  const endpoint = getEndpoint()
+  const editorBase = ($('#editor-base') as HTMLInputElement).value.trim().replace(/\/$/, '')
+
+  // Pushed-asset breakdown first.
+  if (payload.assets.length > 0) {
+    const summary = payload.assets.reduce<Record<string, number>>((acc, a) => {
+      acc[a.kind] = (acc[a.kind] ?? 0) + 1
+      return acc
+    }, {})
+    logLine(
+      `▸ pushing ${Object.entries(summary).map(([k, n]) => `${n} ${k}${n > 1 ? 's' : ''}`).join(', ')}…`,
+    )
+  }
+
+  // Fire both API calls in parallel.
+  const tasks: Promise<void>[] = []
+  if (payload.assets.length > 0) {
+    tasks.push(pushAssets(brandSlug, payload.assets))
+  }
+  if (payload.templateResult) {
+    tasks.push(pushTemplate(payload.templateResult))
+    // Return early — pushTemplate already opens the editor URL.
+  }
+  await Promise.all(tasks)
+
+  // If we only pushed assets (no template), open the brand-identity page.
+  if (payload.assets.length > 0 && !payload.templateResult) {
+    const url = `${editorBase}/b/${encodeURIComponent(brandSlug)}/guidelines?designer=1`
+    logLink(`→ open ${url}`, url)
+    try {
+      window.open(url, '_blank')
+    } catch {
+      /* fallback to the link in the log */
+    }
+  }
+}
+
+async function pushAssets(brandSlug: string, assets: ExtractedAsset[]): Promise<void> {
+  const endpoint = getEndpoint()
+  try {
+    const res = await fetch(`${endpoint}/api/brands/${encodeURIComponent(brandSlug)}/assets`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ assets }),
+    })
+    if (!res.ok) {
+      logLine(`error: assets push failed ${res.status} ${await res.text()}`, 'err')
+      return
+    }
+    const json = (await res.json()) as {
+      assets: Array<{ kind: string; variant?: string; label: string }>
+    }
+    for (const a of json.assets) {
+      const v = a.variant ? ` "${a.variant}"` : ''
+      logLine(`✓ pushed ${a.kind}${v}`, 'ok')
+    }
+  } catch (err) {
+    logLine(`error: ${err instanceof Error ? err.message : String(err)}`, 'err')
+  }
+}
+
+async function pushTemplate(payload: ExtractTemplateResult): Promise<void> {
   const endpoint = getEndpoint()
   const editorBase = ($('#editor-base') as HTMLInputElement).value.trim().replace(/\/$/, '')
   const brandSlug = selectedBrandSlug

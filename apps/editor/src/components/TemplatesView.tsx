@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import type { Format } from '@framework/types'
 import { TemplateThumbnail } from './TemplateThumbnail'
+import { useBrandContext, type BrandRecord } from './brandContext'
 
 type TemplateStatus = 'draft' | 'published' | 'archived'
 type Industry = 'fashion' | 'luxury' | 'hospitality' | 'other'
-
-interface BrandRecord {
-  id: string
-  slug: string
-  name: string
-  industry?: Industry
-  primaryColor?: string
-  clientEmail?: string
-  inviteSentAt?: string
-  ownerUserId: string
-  createdAt: string
-  updatedAt: string
-}
 
 interface BrandTemplate {
   templateSlug: string
@@ -29,22 +17,25 @@ interface BrandTemplate {
   status?: TemplateStatus
 }
 
-interface Props {
-  brandSlug: string
-  designerEnabled: boolean
-}
-
-export function BrandHub({ brandSlug, designerEnabled }: Props) {
+/**
+ * Templates grid for a brand. Reads brand context from <BrandLayout>.
+ * Client mode: only published templates + optional "Show archived" toggle.
+ * Designer mode: all statuses with badges + "Edit brand" inline form.
+ */
+export function TemplatesView() {
+  const { brand, brandSlug, designerEnabled, reloadBrand } = useBrandContext()
   const [templates, setTemplates] = useState<BrandTemplate[] | null>(null)
-  const [brand, setBrand] = useState<BrandRecord | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const [editing, setEditing] = useState(false)
   const navigate = useNavigate()
 
-  const [showArchived, setShowArchived] = useState(false)
-  const statusFilter = designerEnabled ? 'all' : showArchived ? 'published,archived' : 'published'
+  const statusFilter = designerEnabled
+    ? 'all'
+    : showArchived
+      ? 'published,archived'
+      : 'published'
 
-  // Fetch templates list
   useEffect(() => {
     let cancelled = false
     fetch(`/api/templates?brand=${encodeURIComponent(brandSlug)}&status=${statusFilter}`)
@@ -60,84 +51,37 @@ export function BrandHub({ brandSlug, designerEnabled }: Props) {
     }
   }, [brandSlug, statusFilter])
 
-  // Fetch brand record (for the display name + edit form)
-  useEffect(() => {
-    let cancelled = false
-    fetch(`/api/brands/${encodeURIComponent(brandSlug)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: BrandRecord | null) => {
-        if (!cancelled) setBrand(data)
-      })
-      .catch(() => {
-        /* brand record optional — render with slug fallback */
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [brandSlug])
-
-  const displayName = brand?.name ?? brandSlug
-
   return (
-    <div className="mx-auto w-full max-w-6xl px-8 py-12">
-      <header className="mb-10 flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          {designerEnabled ? (
-            <Link
-              to="/d"
-              className="text-[10px] tracking-[0.15em] uppercase text-[var(--muted)] hover:text-[var(--fg)]"
-            >
-              ← Studio
-            </Link>
-          ) : (
-            <div className="text-[10px] tracking-[0.15em] uppercase text-[var(--muted)]">Brand</div>
-          )}
-          <div className="mt-1 flex items-center gap-3">
-            <h1 className="text-[28px] font-medium leading-tight">{displayName}</h1>
-            {brand?.primaryColor ? (
-              <span
-                className="inline-block rounded-full border border-[var(--line)]"
-                style={{ width: 16, height: 16, background: brand.primaryColor }}
-                title={brand.primaryColor}
-              />
-            ) : null}
-          </div>
-          <p className="mt-2 text-[13px] text-[var(--muted)]">
-            <span className="font-mono">/b/{brandSlug}</span>
-            {templates ? ` · ${templates.length} template${templates.length === 1 ? '' : 's'}` : ''}
-            {designerEnabled ? ' · designer view' : ' · your space'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {designerEnabled && brand ? (
-            <button
-              type="button"
-              className="fw-chip"
-              data-active={editing}
-              onClick={() => setEditing(!editing)}
-            >
-              {editing ? 'Close' : 'Edit brand'}
-            </button>
-          ) : null}
-          {!designerEnabled ? (
-            <button
-              type="button"
-              className="fw-chip"
-              data-active={showArchived}
-              onClick={() => setShowArchived(!showArchived)}
-              title="Toggle archived templates"
-            >
-              {showArchived ? '✓ Show archived' : 'Show archived'}
-            </button>
-          ) : null}
-        </div>
-      </header>
+    <>
+      <div className="mb-6 flex items-center justify-end gap-2">
+        {designerEnabled && brand ? (
+          <button
+            type="button"
+            className="fw-chip"
+            data-active={editing}
+            onClick={() => setEditing(!editing)}
+          >
+            {editing ? 'Close' : 'Edit brand'}
+          </button>
+        ) : null}
+        {!designerEnabled ? (
+          <button
+            type="button"
+            className="fw-chip"
+            data-active={showArchived}
+            onClick={() => setShowArchived(!showArchived)}
+            title="Toggle archived templates"
+          >
+            {showArchived ? '✓ Show archived' : 'Show archived'}
+          </button>
+        ) : null}
+      </div>
 
       {editing && brand ? (
         <BrandEditForm
           brand={brand}
-          onSaved={(updated) => {
-            setBrand(updated)
+          onSaved={() => {
+            void reloadBrand()
             setEditing(false)
           }}
           onCancel={() => setEditing(false)}
@@ -150,7 +94,7 @@ export function BrandHub({ brandSlug, designerEnabled }: Props) {
         <div className="text-[12px] text-[var(--muted)]">Loading…</div>
       ) : templates.length === 0 ? (
         <div className="rounded-lg border border-dashed border-[var(--line-2)] p-12 text-center text-[var(--muted)]">
-          No templates pushed yet. Ask your designer to push a template from Figma.
+          No templates pushed yet. Push your first one from Figma.
         </div>
       ) : (
         <div className="fw-hub-grid">
@@ -164,7 +108,10 @@ export function BrandHub({ brandSlug, designerEnabled }: Props) {
                 navigate({
                   to: '/c/$compositionId',
                   params: { compositionId: t.templateSlug },
-                  search: { brand: brandSlug, designer: designerEnabled ? '1' : undefined },
+                  search: {
+                    brand: brandSlug,
+                    designer: designerEnabled ? '1' : undefined,
+                  },
                 })
               }
             >
@@ -196,24 +143,31 @@ export function BrandHub({ brandSlug, designerEnabled }: Props) {
               <div className="fw-hub-card__meta">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-[14px]">{t.name}</span>
-                  <span className="shrink-0 text-[10px] text-[var(--muted)]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  <span
+                    className="shrink-0 text-[10px] text-[var(--muted)]"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                  >
                     v{t.versionNumber}
                   </span>
                 </div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {t.formats.map((f) => (
-                    <span key={f} className="text-[10px] text-[var(--muted)]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    <span
+                      key={f}
+                      className="text-[10px] text-[var(--muted)]"
+                      style={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
                       {f}
                     </span>
                   ))}
                 </div>
-                <div className="mt-2 text-[10px] text-[var(--muted)]">{relativeTime(t.pushedAt)}</div>
+                <div className="mt-2 text-[10px] text-[var(--muted)]">{rel(t.pushedAt)}</div>
               </div>
             </button>
           ))}
         </div>
       )}
-    </div>
+    </>
   )
 }
 
@@ -297,7 +251,10 @@ function BrandEditForm({
             className="fw-swatch fw-swatch--lg"
             style={{ background: primaryColor, padding: 0 }}
           />
-          <span className="text-[11px] text-[var(--muted)]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <span
+            className="text-[11px] text-[var(--muted)]"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
             {primaryColor.toUpperCase()}
           </span>
         </div>
@@ -358,7 +315,7 @@ function Field({
   )
 }
 
-function relativeTime(iso: string): string {
+function rel(iso: string): string {
   const now = Date.now()
   const then = new Date(iso).getTime()
   const sec = Math.max(1, Math.round((now - then) / 1000))

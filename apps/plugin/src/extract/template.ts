@@ -54,7 +54,6 @@ interface WalkerCtx {
 }
 
 export async function extractTemplate(name: string): Promise<ExtractTemplateResult> {
-  const warnings: string[] = []
   const selection = figma.currentPage.selection.filter(
     (n): n is FrameNode | ComponentNode =>
       n.type === 'FRAME' || n.type === 'COMPONENT',
@@ -62,12 +61,27 @@ export async function extractTemplate(name: string): Promise<ExtractTemplateResu
   if (selection.length === 0) {
     throw new Error('Select at least one frame to push as a template.')
   }
+  return extractTemplateFromNodes(selection, name)
+}
+
+/**
+ * Same as `extractTemplate` but takes the nodes explicitly — used by
+ * `extractMixed` when the selection is split between assets and templates.
+ */
+export async function extractTemplateFromNodes(
+  selection: ReadonlyArray<FrameNode | ComponentNode>,
+  name: string,
+): Promise<ExtractTemplateResult> {
+  const warnings: string[] = []
+  if (selection.length === 0) {
+    throw new Error('No template frames to extract.')
+  }
 
   const ctx: WalkerCtx = {
     slotMap: new Map(),
     nameToKey: new Map(),
     warnings,
-    implicitSlots: selection.length > 1, // share slots across multi-frame pushes
+    implicitSlots: selection.length > 1,
   }
 
   const variants: import('../types').TemplateVariant[] = []

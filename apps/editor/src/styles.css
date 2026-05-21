@@ -211,6 +211,23 @@ button { cursor: pointer; }
   box-shadow: 0 -2px 0 var(--highlight) inset;
 }
 
+/* Brand layout tab bar links */
+.fw-tab-link {
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  text-decoration: none;
+  transition: color 80ms ease, border-color 80ms ease;
+  margin-bottom: -1px;
+  display: inline-block;
+}
+.fw-tab-link:hover { color: var(--fg-2); }
+.fw-tab-link.is-active {
+  color: var(--fg);
+  border-bottom-color: var(--fg);
+}
+
 /* ========================================================
    BRAND TABLE (designer dashboard)
    ======================================================== */

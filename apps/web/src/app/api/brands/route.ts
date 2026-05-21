@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createBrand, listBrands } from '@/server/brand-store'
+import { defaultBrandTokens, savePushedBrandTokens } from '@/server/brand-tokens-store'
 
 export const runtime = 'nodejs'
 
@@ -36,6 +37,14 @@ export async function POST(req: NextRequest) {
   }
   try {
     const brand = createBrand(parsed.data)
+    // Seed default brand tokens so the guidelines page is never empty.
+    // The plugin's POST /api/brand-tokens or the editor's PATCH on
+    // /api/brands/[slug]/tokens overwrite this baseline later.
+    savePushedBrandTokens({
+      brandSlug: brand.slug,
+      sourceFigmaFileKey: 'seed',
+      tokens: defaultBrandTokens(brand.primaryColor),
+    })
     return cors(NextResponse.json(brand, { status: 201 }))
   } catch (err) {
     if (err instanceof Error && err.message === 'slug_taken') {
