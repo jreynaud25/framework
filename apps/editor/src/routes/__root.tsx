@@ -1,12 +1,13 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 
+/**
+ * Root layout — no chrome. Each route owns its own header so surfaces
+ * like the brand book can fill the viewport (sidebar at the very top,
+ * no banner sitting above it).
+ */
 export const Route = createRootRoute({
   component: () => (
-    <div className="grid h-full grid-rows-[48px_1fr]">
-      <header className="flex items-center justify-between border-b border-[var(--line)] px-4">
-        <div className="font-medium tracking-tight">Framework</div>
-        <div className="text-xs text-[var(--muted)]">Editor</div>
-      </header>
+    <div className="h-full">
       <Outlet />
     </div>
   ),
