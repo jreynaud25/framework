@@ -50,6 +50,8 @@ export type BlockKind =
   | 'patternGrid'
   // resources
   | 'downloads'
+  // media library (auto-aggregates assets by kind)
+  | 'mediaLibrary'
   // free
   | 'embed'
 
@@ -257,6 +259,19 @@ export interface EmbedBlock extends BaseBlock {
   height?: number
 }
 
+/**
+ * Auto-aggregating gallery of brand assets by kind. Designer adds it once
+ * on (e.g.) the Photography page; every push from Figma into that kind
+ * shows up here without manual wiring.
+ */
+export interface MediaLibraryBlock extends BaseBlock {
+  kind: 'mediaLibrary'
+  filter: 'logo' | 'photo' | 'pattern' | 'icon' | 'all'
+  columns?: 2 | 3 | 4 | 5
+  aspect?: '1:1' | '4:3' | '16:9' | 'auto'
+  showLabels?: boolean
+}
+
 export type Block =
   | HeroBlock
   | SectionBlock
@@ -287,6 +302,7 @@ export type Block =
   | CopyExamplesBlock
   | PatternGridBlock
   | DownloadsBlock
+  | MediaLibraryBlock
   | EmbedBlock
 
 export interface BrandPage {

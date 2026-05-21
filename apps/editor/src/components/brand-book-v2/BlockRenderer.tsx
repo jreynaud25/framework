@@ -28,6 +28,7 @@ import { VocabularyBlockView } from './blocks/VocabularyBlockView'
 import { CopyExamplesBlockView } from './blocks/CopyExamplesBlockView'
 import { PatternGridBlockView } from './blocks/PatternGridBlockView'
 import { DownloadsBlockView } from './blocks/DownloadsBlockView'
+import { MediaLibraryBlockView } from './blocks/MediaLibraryBlockView'
 import { EmbedBlockView } from './blocks/EmbedBlockView'
 
 /**
@@ -95,6 +96,8 @@ export function BlockRenderer({ block }: { block: Block }) {
       return <PatternGridBlockView block={block} />
     case 'downloads':
       return <DownloadsBlockView block={block} />
+    case 'mediaLibrary':
+      return <MediaLibraryBlockView block={block} />
     case 'embed':
       return <EmbedBlockView block={block} />
     default: {

@@ -2449,3 +2449,54 @@ button.fw-bbook__brand-head-name-row:hover .fw-bbook__brand-head-edit { opacity:
    triggers click for navigation; drag starts only when user drags the gap. */
 .fw-bbook__nav-row[draggable='true'] { cursor: grab; }
 .fw-bbook__nav-row[draggable='true']:active { cursor: grabbing; }
+
+/* ── Media library block ───────────────────────────── */
+.fw-bbook__media-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.fw-bbook__media-head > :first-child {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bbook-muted);
+  font-weight: 500;
+}
+.fw-bbook__media-count {
+  font-size: 11px;
+  color: var(--bbook-muted-2);
+  font-variant-numeric: tabular-nums;
+}
+.fw-bbook__media-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+.fw-bbook__media-cell {
+  position: relative;
+  margin: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bbook-surface-2);
+}
+.fw-bbook__media-cell img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.fw-bbook__media-cell figcaption {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 8px 10px;
+  background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fw-bbook__media-variant {
+  text-transform: uppercase;
+  opacity: 0.75;
+  letter-spacing: 0.08em;
+}
