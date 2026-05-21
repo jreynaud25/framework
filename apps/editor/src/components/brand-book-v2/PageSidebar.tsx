@@ -205,11 +205,11 @@ export function PageSidebar({
           to="/b/$brandSlug"
           params={{ brandSlug }}
           search={search}
-          className={`fw-bbook__nav-item fw-bbook__nav-templates-link ${
+          className={`fw-bbook__nav-templates-link ${
             currentFullPath === '__templates' ? 'is-active' : ''
           }`}
         >
-          <span className="fw-bbook__nav-label">Templates</span>
+          <span>Templates</span>
           <span aria-hidden>→</span>
         </Link>
         <Link
