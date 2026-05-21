@@ -9,6 +9,7 @@ import {
   type BrandBookSelection,
 } from './brandBookContext'
 import { PageSidebar } from './PageSidebar'
+import { BlockInspector } from './designer/BlockInspector'
 
 /**
  * Layout for /b/<slug>/guidelines. Owns the book + tokens + assets fetch,
@@ -119,9 +120,21 @@ export function BrandBookLayout() {
     return <div className="text-[12px] text-[var(--muted)]">Loading…</div>
   }
 
+  const inspectorVisible = designerEnabled && !!ctxValue.selection.blockId
+
   return (
     <BrandBookContext.Provider value={ctxValue}>
-      <div className="fw-bbook">
+      <div
+        className={`fw-bbook ${designerEnabled ? 'is-designer' : ''} ${
+          inspectorVisible ? 'is-editing' : ''
+        }`}
+        onClick={() => {
+          // Click on empty area deselects; child handlers stopPropagation.
+          if (designerEnabled && ctxValue.selection.blockId) {
+            setSelection({ pageId: null, blockId: null })
+          }
+        }}
+      >
         <aside className="fw-bbook__sidebar print:hidden">
           <PageSidebar
             pages={ctxValue.book.pages}
@@ -133,6 +146,7 @@ export function BrandBookLayout() {
         <main className="fw-bbook__main">
           <Outlet />
         </main>
+        {inspectorVisible ? <BlockInspector /> : null}
       </div>
     </BrandBookContext.Provider>
   )
