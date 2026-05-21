@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import type { HexColor } from '@framework/types'
 import { useBrandBookContext } from '../brandBookContext'
 
@@ -186,8 +187,9 @@ export function PaletteColorPicker({
 }
 
 /**
- * Asset picker — shows thumbnails of brand assets, filtered by kind.
- * Returns the asset id (string) or undefined.
+ * Asset picker — shows thumbnails of brand assets, filtered by kind. Has
+ * an "Upload" tile that reads the file as a data URL and POSTs to the
+ * brand's assets endpoint, then refetches the asset list.
  */
 export function AssetPicker({
   label,
@@ -200,8 +202,51 @@ export function AssetPicker({
   onChange: (next: string | undefined) => void
   kind?: 'logo' | 'photo' | 'pattern' | 'icon'
 }) {
-  const { assets } = useBrandBookContext()
+  const { assets, brandSlug, reloadAssets } = useBrandBookContext()
   const candidates = kind ? assets.filter((a) => a.kind === kind) : assets
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setBusy(true)
+    try {
+      const items = await Promise.all(
+        Array.from(files).map(
+          (f) =>
+            new Promise<{ kind: 'logo' | 'photo' | 'pattern' | 'icon'; label: string; dataUrl: string }>(
+              (resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () =>
+                  resolve({
+                    kind: kind ?? 'photo',
+                    label: f.name,
+                    dataUrl: reader.result as string,
+                  })
+                reader.onerror = reject
+                reader.readAsDataURL(f)
+              },
+            ),
+        ),
+      )
+      const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/assets`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ assets: items.map((it) => ({ ...it, source: 'editor' })) }),
+      })
+      if (!res.ok) {
+        console.error('[asset upload] HTTP', res.status)
+        return
+      }
+      const data = (await res.json()) as { assets: { id: string }[] }
+      await reloadAssets()
+      // Auto-select the first uploaded one
+      if (data.assets[0]?.id) onChange(data.assets[0].id)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="fw-bbook-edit__field">
       <span className="fw-bbook-edit__field-label">{label}</span>
@@ -213,8 +258,28 @@ export function AssetPicker({
         >
           none
         </button>
+        <button
+          type="button"
+          className="fw-bbook-edit__asset-tile fw-bbook-edit__asset-tile--upload"
+          onClick={() => fileRef.current?.click()}
+          title={busy ? 'Uploading…' : 'Upload image'}
+          disabled={busy}
+        >
+          {busy ? '…' : '+'}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            void handleFiles(e.target.files)
+            e.target.value = '' // reset so re-selecting the same file works
+          }}
+        />
         {candidates.length === 0 ? (
-          <span className="fw-bbook-edit__asset-empty">no {kind ?? 'asset'} assets</span>
+          <span className="fw-bbook-edit__asset-empty">no {kind ?? 'asset'} assets — click + to upload</span>
         ) : (
           candidates.map((a) => (
             <button

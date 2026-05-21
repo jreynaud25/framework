@@ -2257,3 +2257,130 @@ button.fw-bbook__brand-head-name-row:hover .fw-bbook__brand-head-edit { opacity:
 /* When the templates view renders inside fw-bbook__main, give it the same
    padding context as a page so it doesn't feel adrift. */
 .fw-bbook__page > * { color: var(--bbook-fg); }
+
+/* ── Token editor sub-sections (inside Inspector) ─────── */
+.fw-bbook-edit__tokens {
+  background: var(--bbook-surface);
+  border: 1px solid var(--bbook-line);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fw-bbook-edit__tokens-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bbook-muted);
+  font-weight: 500;
+}
+.fw-bbook-edit__tokens-tag {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  background: var(--bbook-line);
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--bbook-muted-2);
+}
+.fw-bbook-edit__tokens-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fw-bbook-edit__tokens-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fw-bbook-edit__tokens-color {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--bbook-line);
+  border-radius: 5px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.fw-bbook-edit__tokens-slot-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bbook-muted);
+  flex: 1;
+}
+.fw-bbook-edit__tokens-rm {
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 0;
+  color: var(--bbook-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+.fw-bbook-edit__tokens-rm:hover { color: var(--bbook-danger); background: var(--bbook-line); }
+
+/* ── Chip rows (used by LogoGrid / LogoPlacement inspectors) ── */
+.fw-bbook-edit__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.fw-bbook-edit__chip {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--bbook-line-2);
+  background: var(--bbook-bg);
+  color: var(--bbook-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.fw-bbook-edit__chip.is-active {
+  background: var(--bbook-fg);
+  color: var(--bbook-bg);
+  border-color: var(--bbook-fg);
+}
+.fw-bbook-edit__chip:not(.is-active):hover { border-color: var(--bbook-fg); color: var(--bbook-fg); }
+
+/* ── Upload tile in AssetPicker ───────────────────────── */
+.fw-bbook-edit__asset-tile--upload {
+  background: var(--bbook-surface);
+  color: var(--bbook-muted);
+  font-size: 22px;
+  font-weight: 300;
+  border: 1px dashed var(--bbook-line-2);
+}
+.fw-bbook-edit__asset-tile--upload:hover {
+  border-style: solid;
+  border-color: var(--bbook-fg);
+  color: var(--bbook-fg);
+}
+
+/* ── Composition editor status pill — light-mode equivalents ── */
+.fw-comp-status-draft {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fef3c7;     /* amber-100 */
+  color: #92400e;          /* amber-800 */
+}
+.fw-comp-status-archived {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fee2e2;     /* red-100 */
+  color: #991b1b;          /* red-800 */
+}
+.fw-comp-status-published {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #dcfce7;     /* green-100 */
+  color: #166534;          /* green-800 */
+}

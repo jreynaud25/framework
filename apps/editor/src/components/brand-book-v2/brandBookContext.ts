@@ -26,6 +26,14 @@ export interface BrandBookContextValue {
   reloadBook: () => Promise<void>
   /** Patch a single page (PATCH /api/.../pages/[id]); updates context. */
   patchPage: (pageId: string, patch: Partial<BrandPage>) => Promise<void>
+  /**
+   * Patch the brand's tokens (palette / typography / voice / imagery / etc.).
+   * The PATCH endpoint deep-merges and returns the canonical tokens — the
+   * context is updated from the response so every block re-renders.
+   */
+  patchTokens: (delta: Partial<BrandTokens>) => Promise<void>
+  /** Refetch assets — call after upload / delete. */
+  reloadAssets: () => Promise<void>
 }
 
 export const BrandBookContext = createContext<BrandBookContextValue | null>(null)

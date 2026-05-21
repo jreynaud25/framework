@@ -829,13 +829,15 @@ function FloatingDock({
         <>
           {/* Status pill — visible at a glance */}
           <span
-            className="fw-dock-btn__progress"
-            style={{
-              padding: '4px 10px',
-              borderRadius: 999,
-              background: status === 'draft' ? '#3a3a00' : status === 'archived' ? '#3a0000' : 'transparent',
-              color: status === 'draft' ? '#ffd966' : status === 'archived' ? '#ff8a8a' : 'var(--muted)',
-            }}
+            className={
+              status === 'draft'
+                ? 'fw-comp-status-draft'
+                : status === 'archived'
+                  ? 'fw-comp-status-archived'
+                  : status === 'published'
+                    ? 'fw-comp-status-published'
+                    : 'fw-dock-btn__progress'
+            }
           >
             {status}
           </span>

@@ -12,6 +12,11 @@ import {
   TextareaField,
   ToggleField,
 } from './fields'
+import { PaletteEditor } from './token-editors/PaletteEditor'
+import { SemanticColorsEditor } from './token-editors/SemanticColorsEditor'
+import { TypographyRoleEditor } from './token-editors/TypographyRoleEditor'
+import { VoiceEditor } from './token-editors/VoiceEditor'
+import { ImageryEditor } from './token-editors/ImageryEditor'
 
 /**
  * Right-side property panel. Reads context.selection.blockId, finds the
@@ -266,10 +271,16 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
             ]}
             onChange={(v) => patch({ columns: Number(v) as 2 | 3 | 4 | 5 })}
           />
-          <p className="fw-bbook-edit__hint">
-            Filter colors and other specs in a future panel — for now the palette block renders all
-            brand palette colors.
-          </p>
+          <StringListField
+            label="Shown specs"
+            value={block.showFields ?? ['hex']}
+            onChange={(next) =>
+              patch({ showFields: next as ('hex' | 'rgb' | 'cmyk' | 'pantone' | 'usage')[] })
+            }
+            placeholder="hex | rgb | cmyk | pantone | usage"
+          />
+          <hr className="fw-bbook-edit__field-sep" />
+          <PaletteEditor />
         </>
       )
 
@@ -295,14 +306,21 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
               />
             </>
           ) : null}
+          <hr className="fw-bbook-edit__field-sep" />
+          <PaletteEditor />
         </>
       )
 
     case 'colorPairing':
       return (
-        <p className="fw-bbook-edit__hint">
-          Default pairings shown. Custom pairings editor coming soon.
-        </p>
+        <>
+          <p className="fw-bbook-edit__hint">
+            Default pairings are derived from your semantic colors (bg / fg / primary).
+            Edit them below to change every brand book pairing card at once.
+          </p>
+          <hr className="fw-bbook-edit__field-sep" />
+          <SemanticColorsEditor />
+        </>
       )
 
     case 'tintScale':
@@ -330,6 +348,8 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
             }
             placeholder="e.g. 50"
           />
+          <hr className="fw-bbook-edit__field-sep" />
+          <PaletteEditor />
         </>
       )
 
@@ -365,10 +385,11 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
 
     case 'logoGrid':
       return (
-        <p className="fw-bbook-edit__hint">
-          Renders one logo per variant × selected background. Use the Assets pane (Brand → Assets) to upload
-          additional variants.
-        </p>
+        <LogoGridInspector
+          variants={block.variants}
+          bgs={block.bgs}
+          onChange={(next) => patch(next)}
+        />
       )
 
     case 'logoClearspace':
@@ -398,9 +419,10 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
 
     case 'logoPlacement':
       return (
-        <p className="fw-bbook-edit__hint">
-          Five-position diagram. Bottom-right is the recommended placement.
-        </p>
+        <LogoPlacementInspector
+          positions={block.positions ?? ['tl', 'tr', 'bl', 'br', 'c']}
+          onChange={(next) => patch({ positions: next })}
+        />
       )
 
     case 'typeSpecimen':
@@ -425,14 +447,22 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
             max={240}
             onChange={(v) => patch({ sizePx: v })}
           />
+          <hr className="fw-bbook-edit__field-sep" />
+          <TypographyRoleEditor role={block.role} />
         </>
       )
 
     case 'typeScale':
       return (
-        <p className="fw-bbook-edit__hint">
-          Auto-generated from tokens.typography. To customize, edit each typography role on the Typography page.
-        </p>
+        <>
+          <p className="fw-bbook-edit__hint">
+            Auto-generated from tokens.typography. Edit each role below to change the scale rows.
+          </p>
+          <hr className="fw-bbook-edit__field-sep" />
+          {roleOptions.map((opt) => (
+            <TypographyRoleEditor key={opt.value} role={opt.value} />
+          ))}
+        </>
       )
 
     case 'characterSet':
@@ -455,6 +485,8 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
             ]}
             onChange={(v) => patch({ set: v })}
           />
+          <hr className="fw-bbook-edit__field-sep" />
+          <TypographyRoleEditor role={block.role} />
         </>
       )
 
@@ -510,36 +542,46 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
 
     case 'doDontGrid':
       return (
-        <DoDontInspector
-          items={block.items}
-          columns={block.columns ?? 2}
-          onChange={(next) => patch(next)}
-        />
+        <>
+          <DoDontInspector
+            items={block.items}
+            columns={block.columns ?? 2}
+            onChange={(next) => patch(next)}
+          />
+          <hr className="fw-bbook-edit__field-sep" />
+          <ImageryEditor />
+        </>
       )
 
     case 'toneChips':
       return (
-        <StringListField
-          label="Chips (overrides tokens.voice.tone)"
-          value={block.chips ?? []}
-          placeholder="e.g. Confident"
-          onChange={(next) => patch({ chips: next.length ? next : undefined })}
-        />
+        <>
+          <StringListField
+            label="Local chips (overrides tokens)"
+            value={block.chips ?? []}
+            placeholder="e.g. Confident"
+            onChange={(next) => patch({ chips: next.length ? next : undefined })}
+          />
+          <hr className="fw-bbook-edit__field-sep" />
+          <VoiceEditor field="tone" />
+        </>
       )
 
     case 'vocabulary':
       return (
         <>
           <StringListField
-            label="Preferred"
+            label="Local preferred (overrides)"
             value={block.preferred ?? []}
             onChange={(next) => patch({ preferred: next.length ? next : undefined })}
           />
           <StringListField
-            label="Avoid"
+            label="Local avoid (overrides)"
             value={block.avoid ?? []}
             onChange={(next) => patch({ avoid: next.length ? next : undefined })}
           />
+          <hr className="fw-bbook-edit__field-sep" />
+          <VoiceEditor field="vocabulary" />
         </>
       )
 
@@ -553,17 +595,18 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
 
     case 'patternGrid':
       return (
-        <p className="fw-bbook-edit__hint">
-          Auto-renders all uploaded pattern assets. Add patterns from the Figma plugin or the Brand
-          assets panel.
-        </p>
+        <PatternGridInspector
+          assetIds={block.assetIds}
+          onChange={(next) => patch({ assetIds: next })}
+        />
       )
 
     case 'downloads':
       return (
-        <p className="fw-bbook-edit__hint">
-          Auto-renders logo variants + brand fonts. Custom items editor coming soon.
-        </p>
+        <DownloadsInspector
+          items={block.items}
+          onChange={(next) => patch({ items: next })}
+        />
       )
 
     case 'embed':
@@ -892,6 +935,233 @@ function DoDontInspector({
         </div>
       </div>
     </>
+  )
+}
+
+const LOGO_VARIANT_OPTIONS = ['primary', 'wordmark', 'symbol', 'monochrome', 'inverted']
+const BG_OPTIONS: { key: BlockBgRef; label: string }[] = [
+  { key: 'bg', label: 'Surface' },
+  { key: 'fg', label: 'Ink' },
+  { key: 'primary', label: 'Primary' },
+  { key: 'accent', label: 'Accent' },
+]
+
+function LogoGridInspector({
+  variants,
+  bgs,
+  onChange,
+}: {
+  variants?: string[]
+  bgs?: BlockBgRef[]
+  onChange: (next: { variants?: string[]; bgs?: BlockBgRef[] }) => void
+}) {
+  const toggleVariant = (v: string) => {
+    const current = variants ?? LOGO_VARIANT_OPTIONS
+    const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
+    onChange({ variants: next.length === LOGO_VARIANT_OPTIONS.length ? undefined : next })
+  }
+  const toggleBg = (b: BlockBgRef) => {
+    const current = bgs ?? ['bg', 'fg', 'primary']
+    const next = current.includes(b) ? current.filter((x) => x !== b) : [...current, b]
+    onChange({ bgs: next as BlockBgRef[] })
+  }
+  return (
+    <>
+      <div className="fw-bbook-edit__field">
+        <span className="fw-bbook-edit__field-label">Variants</span>
+        <div className="fw-bbook-edit__chip-row">
+          {LOGO_VARIANT_OPTIONS.map((v) => {
+            const on = !variants || variants.includes(v)
+            return (
+              <button
+                key={v}
+                type="button"
+                className={`fw-bbook-edit__chip ${on ? 'is-active' : ''}`}
+                onClick={() => toggleVariant(v)}
+              >
+                {v}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div className="fw-bbook-edit__field">
+        <span className="fw-bbook-edit__field-label">Backgrounds</span>
+        <div className="fw-bbook-edit__chip-row">
+          {BG_OPTIONS.map(({ key, label }) => {
+            const on = (bgs ?? ['bg', 'fg', 'primary']).includes(key)
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`fw-bbook-edit__chip ${on ? 'is-active' : ''}`}
+                onClick={() => toggleBg(key)}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </>
+  )
+}
+
+function LogoPlacementInspector({
+  positions,
+  onChange,
+}: {
+  positions: ('tl' | 'tr' | 'bl' | 'br' | 'c')[]
+  onChange: (next: ('tl' | 'tr' | 'bl' | 'br' | 'c')[]) => void
+}) {
+  const ALL: ('tl' | 'tr' | 'bl' | 'br' | 'c')[] = ['tl', 'tr', 'bl', 'br', 'c']
+  const toggle = (p: 'tl' | 'tr' | 'bl' | 'br' | 'c') => {
+    const next = positions.includes(p) ? positions.filter((x) => x !== p) : [...positions, p]
+    onChange(next)
+  }
+  const LABELS = { tl: 'Top-L', tr: 'Top-R', bl: 'Btm-L', br: 'Btm-R', c: 'Center' } as const
+  return (
+    <div className="fw-bbook-edit__field">
+      <span className="fw-bbook-edit__field-label">Positions shown</span>
+      <div className="fw-bbook-edit__chip-row">
+        {ALL.map((p) => (
+          <button
+            key={p}
+            type="button"
+            className={`fw-bbook-edit__chip ${positions.includes(p) ? 'is-active' : ''}`}
+            onClick={() => toggle(p)}
+          >
+            {LABELS[p]}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PatternGridInspector({
+  assetIds,
+  onChange,
+}: {
+  assetIds?: string[]
+  onChange: (next: string[] | undefined) => void
+}) {
+  const { assets } = useBrandBookContext()
+  const patterns = assets.filter((a) => a.kind === 'pattern')
+  const showAll = !assetIds
+  const toggle = (id: string) => {
+    const current = assetIds ?? patterns.map((a) => a.id)
+    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    onChange(next.length === patterns.length ? undefined : next)
+  }
+  return (
+    <div className="fw-bbook-edit__field">
+      <span className="fw-bbook-edit__field-label">
+        Patterns ({showAll ? 'all' : `${assetIds!.length} selected`})
+      </span>
+      <div className="fw-bbook-edit__asset-row">
+        {patterns.length === 0 ? (
+          <span className="fw-bbook-edit__asset-empty">no pattern assets yet</span>
+        ) : (
+          patterns.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              title={p.label}
+              className={`fw-bbook-edit__asset-tile ${
+                (assetIds ?? patterns.map((x) => x.id)).includes(p.id) ? 'is-active' : ''
+              }`}
+              onClick={() => toggle(p.id)}
+            >
+              <img src={p.dataUrl} alt={p.label} />
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DownloadsInspector({
+  items,
+  onChange,
+}: {
+  items?: { label: string; assetId?: string; url?: string; format?: string }[]
+  onChange: (next: { label: string; assetId?: string; url?: string; format?: string }[] | undefined) => void
+}) {
+  const { assets } = useBrandBookContext()
+  const rows = items ?? []
+  const update = (i: number, patch: Partial<{ label: string; assetId?: string; url?: string; format?: string }>) => {
+    const next = [...rows]
+    next[i] = { ...next[i]!, ...patch }
+    onChange(next)
+  }
+  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i))
+  const add = () => onChange([...rows, { label: 'New file' }])
+  return (
+    <div className="fw-bbook-edit__field">
+      <span className="fw-bbook-edit__field-label">
+        {items ? 'Custom items' : 'Auto items (logos + fonts)'}
+      </span>
+      <p className="fw-bbook-edit__hint">
+        {items
+          ? 'Custom list — overrides auto.'
+          : 'Auto mode shows uploaded logos + brand fonts. Click "+ add custom item" to override.'}
+      </p>
+      <div className="fw-bbook-edit__list">
+        {rows.map((r, i) => (
+          <div key={i} className="fw-bbook-edit__list-row" style={{ flexDirection: 'column', gap: 4 }}>
+            <input
+              type="text"
+              className="fw-bbook-edit__field-input"
+              value={r.label}
+              placeholder="Label"
+              onChange={(e) => update(i, { label: e.target.value })}
+            />
+            <select
+              className="fw-bbook-edit__field-select"
+              value={r.assetId ?? ''}
+              onChange={(e) => update(i, { assetId: e.target.value || undefined })}
+            >
+              <option value="">— or paste a URL —</option>
+              {assets.map((a) => (
+                <option key={a.id} value={a.id}>{a.label} · {a.kind}</option>
+              ))}
+            </select>
+            {!r.assetId ? (
+              <input
+                type="text"
+                className="fw-bbook-edit__field-input"
+                value={r.url ?? ''}
+                placeholder="https://…"
+                onChange={(e) => update(i, { url: e.target.value || undefined })}
+              />
+            ) : null}
+            <input
+              type="text"
+              className="fw-bbook-edit__field-input"
+              value={r.format ?? ''}
+              placeholder="Format (SVG / PNG / ZIP)"
+              onChange={(e) => update(i, { format: e.target.value || undefined })}
+            />
+            <button type="button" onClick={() => remove(i)}>remove</button>
+          </div>
+        ))}
+        <button type="button" className="fw-bbook-edit__list-add" onClick={add}>
+          + add custom item
+        </button>
+        {items ? (
+          <button
+            type="button"
+            className="fw-bbook-edit__list-add"
+            onClick={() => onChange(undefined)}
+            style={{ marginTop: 4 }}
+          >
+            ↺ revert to auto
+          </button>
+        ) : null}
+      </div>
+    </div>
   )
 }
 

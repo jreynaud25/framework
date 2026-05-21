@@ -120,6 +120,34 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
     [brandSlug],
   )
 
+  const patchTokens = useCallback(
+    async (delta: Partial<BrandTokens>) => {
+      const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/tokens`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(delta),
+      })
+      if (!res.ok) {
+        console.error('[brand-book] tokens patch failed', res.status)
+        return
+      }
+      const data = (await res.json()) as { tokens: BrandTokens; versionNumber: number }
+      setTokens(data.tokens)
+    },
+    [brandSlug],
+  )
+
+  const reloadAssets = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/assets`)
+      if (!res.ok) return
+      const data = (await res.json()) as { assets: BrandAsset[] }
+      setAssets(data.assets)
+    } catch {
+      /* keep previous assets on transient error */
+    }
+  }, [brandSlug])
+
   // Sidebar active-state. Three cases:
   //   /b/<slug>                     → templates (currentFullPath = '__templates')
   //   /b/<slug>/guidelines          → no page selected, '' (handled by redirect)
@@ -147,8 +175,21 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
       setSelection,
       reloadBook,
       patchPage,
+      patchTokens,
+      reloadAssets,
     }
-  }, [book, tokens, assets, brandSlug, designerEnabled, selection, reloadBook, patchPage])
+  }, [
+    book,
+    tokens,
+    assets,
+    brandSlug,
+    designerEnabled,
+    selection,
+    reloadBook,
+    patchPage,
+    patchTokens,
+    reloadAssets,
+  ])
 
   if (error) {
     return <div className="fw-bbook__empty" style={{ margin: '2rem' }}>{error}</div>
