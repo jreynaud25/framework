@@ -5,6 +5,7 @@ import { pageFullPath } from '@framework/types'
 import { useBrandContext, type BrandRecord } from '../brandContext'
 import { PageSettingsModal } from './designer/PageSettingsModal'
 import { BrandSettingsModal } from './designer/BrandSettingsModal'
+import { usePageOps } from './designer/usePageOps'
 
 interface Props {
   pages: BrandPage[]
@@ -46,9 +47,61 @@ export function PageSidebar({
   const [creating, setCreating] = useState(false)
   const [editingBrand, setEditingBrand] = useState(false)
   const [shareFlash, setShareFlash] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ id: string; above: boolean } | null>(null)
   const { reloadBrand } = useBrandContext()
+  const { reorderPages } = usePageOps()
   const navigate = useNavigate()
   const search = designerEnabled ? { designer: '1' as const } : undefined
+
+  /** Reorder helper: handle a drop given source + target within a sibling group. */
+  const handleDrop = (
+    parentId: string | null,
+    siblings: BrandPage[],
+    targetId: string,
+    above: boolean,
+    draggedId: string,
+  ) => {
+    if (draggedId === targetId) return
+    const fromIdx = siblings.findIndex((p) => p.id === draggedId)
+    if (fromIdx === -1) return
+    const targetIdx = siblings.findIndex((p) => p.id === targetId)
+    if (targetIdx === -1) return
+    let insertAt = above ? targetIdx : targetIdx + 1
+    if (fromIdx < insertAt) insertAt -= 1
+    if (insertAt === fromIdx) return
+    const next = [...siblings]
+    const [moved] = next.splice(fromIdx, 1)
+    if (moved) next.splice(insertAt, 0, moved)
+    void reorderPages({ parentId, orderedSiblings: next, bookPages: pages })
+  }
+
+  /** Drag handlers factory for a page row in a given sibling group. */
+  const dragHandlersFor = (page: BrandPage, siblings: BrandPage[], parentId: string | null) => ({
+    draggable: designerEnabled,
+    onDragStart: (e: React.DragEvent) => {
+      e.dataTransfer.setData('text/plain', page.id)
+      e.dataTransfer.setData('application/x-fw-page-parent', String(parentId ?? ''))
+      e.dataTransfer.effectAllowed = 'move'
+    },
+    onDragOver: (e: React.DragEvent) => {
+      const fromParent = e.dataTransfer.types.includes('application/x-fw-page-parent')
+      if (!fromParent) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      const above = e.clientY < rect.top + rect.height / 2
+      setDropTarget({ id: page.id, above })
+    },
+    onDragLeave: () => setDropTarget((d) => (d?.id === page.id ? null : d)),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault()
+      const draggedId = e.dataTransfer.getData('text/plain')
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      const above = e.clientY < rect.top + rect.height / 2
+      setDropTarget(null)
+      handleDrop(parentId, siblings, page.id, above, draggedId)
+    },
+  })
 
   const handleShare = async () => {
     const ok = await copyCurrentUrl()
@@ -117,9 +170,13 @@ export function PageSidebar({
           const children = visible
             .filter((p) => p.parentId === page.id)
             .sort((a, b) => a.order - b.order)
+          const dropHere = dropTarget?.id === page.id ? dropTarget.above ? 'above' : 'below' : null
           return (
             <div key={page.id} className="fw-bbook__nav-group">
-              <div className="fw-bbook__nav-row">
+              <div
+                className={`fw-bbook__nav-row ${dropHere ? `is-drop-${dropHere}` : ''}`}
+                {...dragHandlersFor(page, topLevel, null)}
+              >
                 <Link
                   to="/b/$brandSlug/guidelines/$pageSlug"
                   params={{ brandSlug, pageSlug: page.slug }}
@@ -150,8 +207,14 @@ export function PageSidebar({
                 <div className="fw-bbook__nav-children">
                   {children.map((child) => {
                     const childPath = pageFullPath(child, pages)
+                    const childDrop =
+                      dropTarget?.id === child.id ? (dropTarget.above ? 'above' : 'below') : null
                     return (
-                      <div key={child.id} className="fw-bbook__nav-row">
+                      <div
+                        key={child.id}
+                        className={`fw-bbook__nav-row ${childDrop ? `is-drop-${childDrop}` : ''}`}
+                        {...dragHandlersFor(child, children, page.id)}
+                      >
                         <Link
                           to="/b/$brandSlug/guidelines/$pageSlug/$childSlug"
                           params={{ brandSlug, pageSlug: page.slug, childSlug: child.slug }}

@@ -2412,3 +2412,40 @@ button.fw-bbook__brand-head-name-row:hover .fw-bbook__brand-head-edit { opacity:
   background: var(--bbook-surface-2);
   padding: 14px 18px;
 }
+
+/* ── Drag-and-drop reorder indicators ─────────────────── */
+.fw-bbook-edit__frame { cursor: grab; }
+.fw-bbook-edit__frame.is-selected { cursor: default; }
+.fw-bbook-edit__frame.is-dragging { opacity: 0.4; cursor: grabbing; }
+.fw-bbook-edit__frame.is-drop-above { box-shadow: 0 -3px 0 0 var(--bbook-fg); }
+.fw-bbook-edit__frame.is-drop-below { box-shadow: 0 3px 0 0 var(--bbook-fg); }
+.fw-bbook-edit__toolbar-grip {
+  font-size: 11px;
+  letter-spacing: -1px;
+  cursor: grab;
+  opacity: 0.7;
+  padding-right: 4px;
+}
+.fw-bbook-edit__frame.is-dragging .fw-bbook-edit__toolbar-grip { cursor: grabbing; }
+
+/* Page sidebar drop indicators */
+.fw-bbook__nav-row {
+  position: relative;
+}
+.fw-bbook__nav-row.is-drop-above::before,
+.fw-bbook__nav-row.is-drop-below::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--bbook-fg);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.fw-bbook__nav-row.is-drop-above::before { top: -2px; }
+.fw-bbook__nav-row.is-drop-below::after { bottom: -2px; }
+/* Designer-only: pages have grab cursor on the row. The Link inside still
+   triggers click for navigation; drag starts only when user drags the gap. */
+.fw-bbook__nav-row[draggable='true'] { cursor: grab; }
+.fw-bbook__nav-row[draggable='true']:active { cursor: grabbing; }

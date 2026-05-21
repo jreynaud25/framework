@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { BrandPage } from '@framework/types'
 import { useBrandBookContext } from '../brandBookContext'
+// (kept the BrandPage import — used by reorderPages params below)
 
 /**
  * Page CRUD on the current book. Pages are persisted through the brand
@@ -71,5 +72,36 @@ export function usePageOps() {
     [brandSlug, reloadBook],
   )
 
-  return { createPage, updatePage, deletePage }
+  /**
+   * Reorder pages within a sibling group (same parentId). Updates each
+   * sibling's `order` to its new position, then PATCHes the whole book.
+   */
+  const reorderPages = useCallback(
+    async (params: {
+      parentId: string | null
+      orderedSiblings: BrandPage[]
+      bookPages: BrandPage[]
+    }) => {
+      const { parentId, orderedSiblings, bookPages } = params
+      const siblingIds = new Set(orderedSiblings.map((p) => p.id))
+      const others = bookPages.filter(
+        (p) => (p.parentId ?? null) !== parentId || !siblingIds.has(p.id),
+      )
+      const reordered = orderedSiblings.map((p, i) => ({ ...p, order: i }))
+      const allPages = [...others, ...reordered]
+      const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/book`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pages: allPages }),
+      })
+      if (!res.ok) {
+        console.error('[brand-book] reorder failed', res.status)
+        return
+      }
+      await reloadBook()
+    },
+    [brandSlug, reloadBook],
+  )
+
+  return { createPage, updatePage, deletePage, reorderPages }
 }

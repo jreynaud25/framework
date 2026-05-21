@@ -14,29 +14,69 @@ interface Props {
 
 /**
  * Designer-only wrapper around a block. Adds:
- *   - hover border + floating toolbar (move, duplicate, delete)
+ *   - hover border + floating toolbar (drag, move, duplicate, delete)
+ *   - HTML5 drag-and-drop to reorder blocks within the page
  *   - click to select (Inspector picks up via context.selection)
  *   - "+ block" affordance directly below for insertion at idx+1
- * Pure presentational chrome — no editing of the block's content happens
- * here; that's the Inspector's job.
  */
 export function BlockFrame({ pageId, block, index, total, children }: Props) {
   const { selection, setSelection } = useBrandBookContext()
   const ops = useBlockOps()
   const [showLibrary, setShowLibrary] = useState(false)
+  const [dropZone, setDropZone] = useState<'above' | 'below' | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const isSelected = selection.blockId === block.id
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDropZone(null)
+    const draggedId = e.dataTransfer.getData('text/plain')
+    if (!draggedId || draggedId === block.id) return
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const above = e.clientY < rect.top + rect.height / 2
+    const targetIndex = above ? index : index + 1
+    void ops.moveBlockTo(pageId, draggedId, targetIndex)
+  }
 
   return (
     <>
       <div
-        className={`fw-bbook-edit__frame ${isSelected ? 'is-selected' : ''}`}
+        className={`fw-bbook-edit__frame ${isSelected ? 'is-selected' : ''} ${
+          isDragging ? 'is-dragging' : ''
+        } ${dropZone ? `is-drop-${dropZone}` : ''}`}
         data-block-id={block.id}
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData('text/plain', block.id)
+          e.dataTransfer.effectAllowed = 'move'
+          setIsDragging(true)
+        }}
+        onDragEnd={() => {
+          setIsDragging(false)
+          setDropZone(null)
+        }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'move'
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+          const above = e.clientY < rect.top + rect.height / 2
+          setDropZone(above ? 'above' : 'below')
+        }}
+        onDragLeave={() => setDropZone(null)}
+        onDrop={handleDrop}
         onClick={(e) => {
           e.stopPropagation()
           setSelection({ pageId, blockId: block.id })
         }}
       >
         <div className="fw-bbook-edit__toolbar" onClick={(e) => e.stopPropagation()}>
+          <span
+            className="fw-bbook-edit__toolbar-grip"
+            title="Drag to reorder"
+            aria-hidden
+          >
+            ⋮⋮
+          </span>
           <span className="fw-bbook-edit__toolbar-kind">{labelFor(block.kind)}</span>
           <button
             type="button"
