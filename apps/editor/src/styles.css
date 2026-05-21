@@ -347,6 +347,90 @@ button { cursor: pointer; }
   opacity: 0.55;
 }
 
+/* Photo grid — large editorial-style mosaic. */
+.fw-bb__photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.fw-bb__photo-card {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(127, 127, 127, 0.08);
+}
+.fw-bb__photo-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.fw-bb__photo-card__label {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.75rem;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Pattern grid — tileable previews. */
+.fw-bb__pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.fw-bb__pattern-card {
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.15);
+  overflow: hidden;
+}
+.fw-bb__pattern-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Voice + Imagery sections */
+.fw-bb__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.fw-bb__chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  font-size: 12px;
+}
+.fw-bb__dual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+.fw-bb__dual h3 {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin: 0 0 1rem;
+  font-weight: 500;
+}
+.fw-bb__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.fw-bb__list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.1);
+  font-size: 14px;
+}
+
 /* Brand layout tab bar links */
 .fw-tab-link {
   padding: 8px 14px;

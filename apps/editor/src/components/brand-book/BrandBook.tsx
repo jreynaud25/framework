@@ -6,6 +6,9 @@ import { PaletteGrid } from './PaletteGrid'
 import { SemanticList } from './SemanticList'
 import { TypeSpecimen } from './TypeSpecimen'
 import { LogoGallery } from './LogoGallery'
+import { PhotoGrid } from './PhotoGrid'
+import { PatternsSection } from './PatternsSection'
+import type { BrandAsset } from './types'
 
 /**
  * Client-facing brand book. Auto-rendered from the brand's tokens — no
@@ -16,14 +19,23 @@ import { LogoGallery } from './LogoGallery'
 export function BrandBook() {
   const { brand, brandSlug } = useBrandContext()
   const [tokens, setTokens] = useState<BrandTokens | null>(null)
+  const [assets, setAssets] = useState<BrandAsset[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/brands/${encodeURIComponent(brandSlug)}/tokens`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d: { tokens: BrandTokens }) => {
-        if (!cancelled) setTokens(d.tokens)
+    Promise.all([
+      fetch(`/api/brands/${encodeURIComponent(brandSlug)}/tokens`).then((r) =>
+        r.ok ? r.json() : Promise.reject(new Error(`tokens HTTP ${r.status}`)),
+      ),
+      fetch(`/api/brands/${encodeURIComponent(brandSlug)}/assets`).then((r) =>
+        r.ok ? r.json() : Promise.resolve({ assets: [] }),
+      ),
+    ])
+      .then(([t, a]: [{ tokens: BrandTokens }, { assets: BrandAsset[] }]) => {
+        if (cancelled) return
+        setTokens(t.tokens)
+        setAssets(a.assets)
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err))
@@ -50,6 +62,8 @@ export function BrandBook() {
   const hasSemantic = tokens.colors.semantic && Object.keys(tokens.colors.semantic).length > 0
   const hasTypography = Object.keys(tokens.typography ?? {}).length > 0
   const hasLogos = (tokens.logos?.length ?? 0) > 0
+  const photos = assets.filter((a) => a.kind === 'photo')
+  const patterns = assets.filter((a) => a.kind === 'pattern')
 
   return (
     <div
@@ -90,6 +104,18 @@ export function BrandBook() {
       {hasLogos ? (
         <Section title="Logos">
           <LogoGallery logos={tokens.logos} pageBg={pageBg} pageFg={pageFg} />
+        </Section>
+      ) : null}
+
+      {photos.length > 0 ? (
+        <Section title="Photography">
+          <PhotoGrid photos={photos} />
+        </Section>
+      ) : null}
+
+      {patterns.length > 0 ? (
+        <Section title="Patterns">
+          <PatternsSection patterns={patterns} />
         </Section>
       ) : null}
     </div>
