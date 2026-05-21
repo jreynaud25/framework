@@ -7,6 +7,7 @@ import { useBrandBookContext } from './brandBookContext'
 import { PageSettingsModal } from './designer/PageSettingsModal'
 import { BrandSettingsModal } from './designer/BrandSettingsModal'
 import { usePageOps } from './designer/usePageOps'
+import { onCommand } from './commandBus'
 
 interface Props {
   pages: BrandPage[]
@@ -70,6 +71,17 @@ export function PageSidebar({
     const id = window.setInterval(() => setTick((t) => t + 1), 5000)
     return () => window.clearInterval(id)
   }, [lastSavedAt])
+
+  // Wire command-bus shortcuts (⌘N → new page, ⌘ palette → edit brand).
+  useEffect(() => {
+    if (!designerEnabled) return
+    const offNew = onCommand('new-page', () => setCreating(true))
+    const offEdit = onCommand('edit-brand', () => setEditingBrand(true))
+    return () => {
+      offNew()
+      offEdit()
+    }
+  }, [designerEnabled])
   const search = designerEnabled ? { designer: '1' as const } : undefined
 
   /** Reorder helper: handle a drop given source + target within a sibling group. */

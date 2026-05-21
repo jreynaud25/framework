@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Outlet, useLocation } from '@tanstack/react-router'
+import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import type { BrandBook, BrandPage, BrandTokens } from '@framework/types'
 import type { BrandAsset } from '../brand-book/types'
 import { BrandContext, type BrandRecord } from '../brandContext'
@@ -11,6 +11,8 @@ import {
 } from './brandBookContext'
 import { PageSidebar } from './PageSidebar'
 import { BlockInspector } from './designer/BlockInspector'
+import { CommandPalette } from './CommandPalette'
+import { fireCommand } from './commandBus'
 
 interface Props {
   brandSlug: string
@@ -33,6 +35,7 @@ const UNDO_LIMIT = 20
  */
 export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [brand, setBrand] = useState<BrandRecord | null>(null)
   const [book, setBook] = useState<BrandBook | null>(null)
   const [tokens, setTokens] = useState<BrandTokens | null>(null)
@@ -44,6 +47,7 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
   })
   const [saving, setSaving] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
+  const [cmdkOpen, setCmdkOpen] = useState(false)
 
   // Undo stack — last N book snapshots. Pushed BEFORE each mutating call so
   // we can restore the previous state. Stored in a ref to avoid re-renders.
@@ -221,27 +225,60 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
     }
   }, [brandSlug, reloadBook])
 
-  // ⌘Z / Ctrl+Z keyboard shortcut for undo. Only active in designer mode
-  // and not when the user is typing in an input / contentEditable.
+  // Keyboard shortcuts. Active everywhere except inside input/textarea/
+  // select/contentEditable (so native editing isn't hijacked).
   useEffect(() => {
-    if (!designerEnabled) return
+    const isTypingTarget = (el: HTMLElement | null) => {
+      if (!el) return false
+      return (
+        el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.tagName === 'SELECT' ||
+        el.isContentEditable
+      )
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return
-      const t = e.target as HTMLElement
-      if (
-        t.tagName === 'INPUT' ||
-        t.tagName === 'TEXTAREA' ||
-        t.tagName === 'SELECT' ||
-        t.isContentEditable
-      ) {
+      const mod = e.metaKey || e.ctrlKey
+      const key = e.key.toLowerCase()
+
+      // ⌘K — open command palette (also OK while typing — designed for it).
+      if (mod && key === 'k') {
+        e.preventDefault()
+        setCmdkOpen((v) => !v)
         return
       }
-      e.preventDefault()
-      void undo()
+      // Esc closes cmdk if open
+      if (e.key === 'Escape' && cmdkOpen) {
+        setCmdkOpen(false)
+        return
+      }
+      // Below shortcuts skip when user is typing in a field.
+      if (isTypingTarget(e.target as HTMLElement)) return
+
+      if (designerEnabled && mod && key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        void undo()
+        return
+      }
+      if (designerEnabled && mod && key === 'n') {
+        e.preventDefault()
+        fireCommand('new-page')
+        return
+      }
+      // ⌘E toggles designer/client view.
+      if (mod && key === 'e') {
+        e.preventDefault()
+        void navigate({
+          to: '.',
+          search: designerEnabled ? {} : { designer: '1' as const },
+          replace: true,
+        })
+        return
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [designerEnabled, undo])
+  }, [designerEnabled, undo, navigate, cmdkOpen])
 
   // Sidebar active-state. Three cases:
   //   /b/<slug>                     → templates (currentFullPath = '__templates')
@@ -331,6 +368,7 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
             <Outlet />
           </main>
           {inspectorVisible ? <BlockInspector /> : null}
+          {cmdkOpen ? <CommandPalette onClose={() => setCmdkOpen(false)} /> : null}
         </div>
       </BrandBookContext.Provider>
     </BrandContext.Provider>
