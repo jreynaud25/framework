@@ -17,6 +17,9 @@ import { Route as CCompositionIdRouteImport } from './routes/c.$compositionId'
 import { Route as BBrandSlugRouteImport } from './routes/b.$brandSlug'
 import { Route as BBrandSlugIndexRouteImport } from './routes/b.$brandSlug.index'
 import { Route as BBrandSlugGuidelinesRouteImport } from './routes/b.$brandSlug.guidelines'
+import { Route as BBrandSlugGuidelinesIndexRouteImport } from './routes/b.$brandSlug.guidelines.index'
+import { Route as BBrandSlugGuidelinesPageSlugRouteImport } from './routes/b.$brandSlug.guidelines.$pageSlug'
+import { Route as BBrandSlugGuidelinesPageSlugChildSlugRouteImport } from './routes/b.$brandSlug.guidelines.$pageSlug.$childSlug'
 
 const DRoute = DRouteImport.update({
   id: '/d',
@@ -58,6 +61,24 @@ const BBrandSlugGuidelinesRoute = BBrandSlugGuidelinesRouteImport.update({
   path: '/guidelines',
   getParentRoute: () => BBrandSlugRoute,
 } as any)
+const BBrandSlugGuidelinesIndexRoute =
+  BBrandSlugGuidelinesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => BBrandSlugGuidelinesRoute,
+  } as any)
+const BBrandSlugGuidelinesPageSlugRoute =
+  BBrandSlugGuidelinesPageSlugRouteImport.update({
+    id: '/$pageSlug',
+    path: '/$pageSlug',
+    getParentRoute: () => BBrandSlugGuidelinesRoute,
+  } as any)
+const BBrandSlugGuidelinesPageSlugChildSlugRoute =
+  BBrandSlugGuidelinesPageSlugChildSlugRouteImport.update({
+    id: '/$childSlug',
+    path: '/$childSlug',
+    getParentRoute: () => BBrandSlugGuidelinesPageSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,16 +87,21 @@ export interface FileRoutesByFullPath {
   '/c/$compositionId': typeof CCompositionIdRoute
   '/d/new': typeof DNewRoute
   '/d/': typeof DIndexRoute
-  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRoute
+  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRouteWithChildren
   '/b/$brandSlug/': typeof BBrandSlugIndexRoute
+  '/b/$brandSlug/guidelines/$pageSlug': typeof BBrandSlugGuidelinesPageSlugRouteWithChildren
+  '/b/$brandSlug/guidelines/': typeof BBrandSlugGuidelinesIndexRoute
+  '/b/$brandSlug/guidelines/$pageSlug/$childSlug': typeof BBrandSlugGuidelinesPageSlugChildSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/c/$compositionId': typeof CCompositionIdRoute
   '/d/new': typeof DNewRoute
   '/d': typeof DIndexRoute
-  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRoute
   '/b/$brandSlug': typeof BBrandSlugIndexRoute
+  '/b/$brandSlug/guidelines/$pageSlug': typeof BBrandSlugGuidelinesPageSlugRouteWithChildren
+  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesIndexRoute
+  '/b/$brandSlug/guidelines/$pageSlug/$childSlug': typeof BBrandSlugGuidelinesPageSlugChildSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,8 +111,11 @@ export interface FileRoutesById {
   '/c/$compositionId': typeof CCompositionIdRoute
   '/d/new': typeof DNewRoute
   '/d/': typeof DIndexRoute
-  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRoute
+  '/b/$brandSlug/guidelines': typeof BBrandSlugGuidelinesRouteWithChildren
   '/b/$brandSlug/': typeof BBrandSlugIndexRoute
+  '/b/$brandSlug/guidelines/$pageSlug': typeof BBrandSlugGuidelinesPageSlugRouteWithChildren
+  '/b/$brandSlug/guidelines/': typeof BBrandSlugGuidelinesIndexRoute
+  '/b/$brandSlug/guidelines/$pageSlug/$childSlug': typeof BBrandSlugGuidelinesPageSlugChildSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,14 +128,19 @@ export interface FileRouteTypes {
     | '/d/'
     | '/b/$brandSlug/guidelines'
     | '/b/$brandSlug/'
+    | '/b/$brandSlug/guidelines/$pageSlug'
+    | '/b/$brandSlug/guidelines/'
+    | '/b/$brandSlug/guidelines/$pageSlug/$childSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/c/$compositionId'
     | '/d/new'
     | '/d'
-    | '/b/$brandSlug/guidelines'
     | '/b/$brandSlug'
+    | '/b/$brandSlug/guidelines/$pageSlug'
+    | '/b/$brandSlug/guidelines'
+    | '/b/$brandSlug/guidelines/$pageSlug/$childSlug'
   id:
     | '__root__'
     | '/'
@@ -117,6 +151,9 @@ export interface FileRouteTypes {
     | '/d/'
     | '/b/$brandSlug/guidelines'
     | '/b/$brandSlug/'
+    | '/b/$brandSlug/guidelines/$pageSlug'
+    | '/b/$brandSlug/guidelines/'
+    | '/b/$brandSlug/guidelines/$pageSlug/$childSlug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +221,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BBrandSlugGuidelinesRouteImport
       parentRoute: typeof BBrandSlugRoute
     }
+    '/b/$brandSlug/guidelines/': {
+      id: '/b/$brandSlug/guidelines/'
+      path: '/'
+      fullPath: '/b/$brandSlug/guidelines/'
+      preLoaderRoute: typeof BBrandSlugGuidelinesIndexRouteImport
+      parentRoute: typeof BBrandSlugGuidelinesRoute
+    }
+    '/b/$brandSlug/guidelines/$pageSlug': {
+      id: '/b/$brandSlug/guidelines/$pageSlug'
+      path: '/$pageSlug'
+      fullPath: '/b/$brandSlug/guidelines/$pageSlug'
+      preLoaderRoute: typeof BBrandSlugGuidelinesPageSlugRouteImport
+      parentRoute: typeof BBrandSlugGuidelinesRoute
+    }
+    '/b/$brandSlug/guidelines/$pageSlug/$childSlug': {
+      id: '/b/$brandSlug/guidelines/$pageSlug/$childSlug'
+      path: '/$childSlug'
+      fullPath: '/b/$brandSlug/guidelines/$pageSlug/$childSlug'
+      preLoaderRoute: typeof BBrandSlugGuidelinesPageSlugChildSlugRouteImport
+      parentRoute: typeof BBrandSlugGuidelinesPageSlugRoute
+    }
   }
 }
 
@@ -199,13 +257,42 @@ const DRouteChildren: DRouteChildren = {
 
 const DRouteWithChildren = DRoute._addFileChildren(DRouteChildren)
 
+interface BBrandSlugGuidelinesPageSlugRouteChildren {
+  BBrandSlugGuidelinesPageSlugChildSlugRoute: typeof BBrandSlugGuidelinesPageSlugChildSlugRoute
+}
+
+const BBrandSlugGuidelinesPageSlugRouteChildren: BBrandSlugGuidelinesPageSlugRouteChildren =
+  {
+    BBrandSlugGuidelinesPageSlugChildSlugRoute:
+      BBrandSlugGuidelinesPageSlugChildSlugRoute,
+  }
+
+const BBrandSlugGuidelinesPageSlugRouteWithChildren =
+  BBrandSlugGuidelinesPageSlugRoute._addFileChildren(
+    BBrandSlugGuidelinesPageSlugRouteChildren,
+  )
+
+interface BBrandSlugGuidelinesRouteChildren {
+  BBrandSlugGuidelinesPageSlugRoute: typeof BBrandSlugGuidelinesPageSlugRouteWithChildren
+  BBrandSlugGuidelinesIndexRoute: typeof BBrandSlugGuidelinesIndexRoute
+}
+
+const BBrandSlugGuidelinesRouteChildren: BBrandSlugGuidelinesRouteChildren = {
+  BBrandSlugGuidelinesPageSlugRoute:
+    BBrandSlugGuidelinesPageSlugRouteWithChildren,
+  BBrandSlugGuidelinesIndexRoute: BBrandSlugGuidelinesIndexRoute,
+}
+
+const BBrandSlugGuidelinesRouteWithChildren =
+  BBrandSlugGuidelinesRoute._addFileChildren(BBrandSlugGuidelinesRouteChildren)
+
 interface BBrandSlugRouteChildren {
-  BBrandSlugGuidelinesRoute: typeof BBrandSlugGuidelinesRoute
+  BBrandSlugGuidelinesRoute: typeof BBrandSlugGuidelinesRouteWithChildren
   BBrandSlugIndexRoute: typeof BBrandSlugIndexRoute
 }
 
 const BBrandSlugRouteChildren: BBrandSlugRouteChildren = {
-  BBrandSlugGuidelinesRoute: BBrandSlugGuidelinesRoute,
+  BBrandSlugGuidelinesRoute: BBrandSlugGuidelinesRouteWithChildren,
   BBrandSlugIndexRoute: BBrandSlugIndexRoute,
 }
 
