@@ -878,10 +878,9 @@ img[data-framework-id]:active {
    ======================================================== */
 
 .fw-bbook {
-  /* Break out of BrandLayout's max-w-6xl px-8 py-12 so the brand book
-     fills the available width and the sidebar can stick to the left. */
-  margin: -3rem -2rem -3rem -2rem;
-  min-height: calc(100vh - 200px);
+  /* Renders full-viewport-width; the parent BrandLayout no longer wraps
+     the Outlet in a max-w container so we just fill our box. */
+  min-height: calc(100vh - 180px);
 
   --bbook-bg: #ffffff;
   --bbook-fg: #0a0a0a;
@@ -2075,4 +2074,92 @@ img[data-framework-id]:active {
 .fw-bbook__nav-add:hover {
   border-color: var(--bbook-fg);
   color: var(--bbook-fg);
+}
+
+/* ── PageOutline (right-rail TOC) ─────────────────────── */
+.fw-bbook__outline {
+  position: sticky;
+  top: 24px;
+  float: right;
+  margin: 12px -220px 24px 32px;
+  width: 180px;
+  font-size: 12px;
+  color: var(--bbook-muted);
+}
+@media (max-width: 1400px) {
+  /* Not enough room for the floated outline — hide it. */
+  .fw-bbook__outline { display: none; }
+}
+.fw-bbook__outline-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bbook-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+.fw-bbook__outline ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-left: 1px solid var(--bbook-line);
+}
+.fw-bbook__outline a {
+  display: block;
+  padding: 4px 12px;
+  color: var(--bbook-muted);
+  text-decoration: none;
+  border-left: 1px solid transparent;
+  margin-left: -1px;
+  transition: color 80ms ease, border-color 80ms ease;
+}
+.fw-bbook__outline a:hover {
+  color: var(--bbook-fg);
+  border-left-color: var(--bbook-fg);
+}
+
+/* ── Sidebar footer (templates link + mode toggle) ───── */
+.fw-bbook__nav-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bbook-line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fw-bbook__nav-templates-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--bbook-fg);
+  text-decoration: none;
+  background: var(--bbook-bg);
+  border: 1px solid var(--bbook-line-2);
+  transition: background 80ms ease, color 80ms ease;
+}
+.fw-bbook__nav-templates-link:hover {
+  background: var(--bbook-fg);
+  color: var(--bbook-bg);
+}
+.fw-bbook__nav-mode {
+  display: block;
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bbook-muted);
+  text-decoration: none;
+  text-align: center;
+  border-radius: 4px;
+}
+.fw-bbook__nav-mode:hover {
+  color: var(--bbook-fg);
+  background: var(--bbook-surface-2);
 }

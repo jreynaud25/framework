@@ -8,15 +8,14 @@ interface Props {
 }
 
 /**
- * Copy the public client URL (no ?designer=1) to the clipboard. Returns
- * true if copy succeeded — caller flashes a toast.
+ * Copy the *current* public URL (no ?designer flag) to the clipboard so
+ * sharing always points to the page the designer is looking at. Returns
+ * true on success; caller flashes a toast.
  */
-async function copyClientUrl(brandSlug: string, isGuidelines: boolean): Promise<boolean> {
+async function copyCurrentUrl(): Promise<boolean> {
   if (typeof window === 'undefined') return false
-  const path = isGuidelines ? `/b/${brandSlug}/guidelines` : `/b/${brandSlug}`
-  const url = `${window.location.origin}${path}`
   try {
-    await navigator.clipboard.writeText(url)
+    await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}`)
     return true
   } catch {
     return false
@@ -26,17 +25,18 @@ async function copyClientUrl(brandSlug: string, isGuidelines: boolean): Promise<
 /**
  * Layout for /b/[brandSlug] and its sub-routes. Owns the shared header
  * (back-link, brand name, primary color swatch) and the tab bar that
- * switches between Templates and Brand identity. The current brand record
- * is fetched here once and shared with children via context.
+ * switches between Templates and Brand identity. Templates render in a
+ * max-w-6xl container; the brand-book guidelines route renders full-width
+ * so it can show its own left sidebar.
  */
 export function BrandLayout({ brandSlug, designerEnabled }: Props) {
   const [brand, setBrand] = useState<BrandRecord | null>(null)
   const [shareFlash, setShareFlash] = useState<string | null>(null)
   const location = useLocation()
-  const isGuidelines = location.pathname.endsWith('/guidelines')
+  const isGuidelines = location.pathname.includes('/guidelines')
 
   async function handleShare() {
-    const ok = await copyClientUrl(brandSlug, isGuidelines)
+    const ok = await copyCurrentUrl()
     setShareFlash(ok ? 'Link copied' : 'Copy failed')
     window.setTimeout(() => setShareFlash(null), 1800)
   }
@@ -56,8 +56,8 @@ export function BrandLayout({ brandSlug, designerEnabled }: Props) {
 
   return (
     <BrandContext.Provider value={{ brand, brandSlug, designerEnabled, reloadBrand: reload }}>
-      <div className="mx-auto w-full max-w-6xl px-8 py-12 print:max-w-none print:px-0 print:py-0">
-        <header className="mb-6 flex items-start justify-between gap-4 print:hidden">
+      <div className="mx-auto w-full max-w-6xl px-8 pt-8 pb-2 print:hidden">
+        <header className="mb-4 flex items-start justify-between gap-4">
           <div>
             {designerEnabled ? (
               <Link
@@ -93,9 +93,9 @@ export function BrandLayout({ brandSlug, designerEnabled }: Props) {
               type="button"
               className="fw-chip"
               onClick={() => void handleShare()}
-              title="Copy the public URL to share with the client"
+              title="Copy the current public URL to share"
             >
-              Share link
+              Share
             </button>
             {isGuidelines && !designerEnabled ? (
               <button
@@ -110,7 +110,7 @@ export function BrandLayout({ brandSlug, designerEnabled }: Props) {
           </div>
         </header>
 
-        <div className="mb-8 flex items-center gap-1 border-b border-[var(--line)] print:hidden">
+        <div className="flex items-center gap-1 border-b border-[var(--line)]">
           <Link
             to="/b/$brandSlug"
             params={{ brandSlug }}
@@ -128,9 +128,12 @@ export function BrandLayout({ brandSlug, designerEnabled }: Props) {
             Brand identity
           </Link>
         </div>
-
-        <Outlet />
       </div>
+
+      {/* Outlet renders raw; templates view wraps itself in max-w-6xl,
+          the brand book renders full-width and self-organises with its
+          own internal sidebar. */}
+      <Outlet />
     </BrandContext.Provider>
   )
 }

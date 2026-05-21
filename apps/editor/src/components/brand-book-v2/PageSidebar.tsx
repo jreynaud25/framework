@@ -117,6 +117,29 @@ export function PageSidebar({ pages, currentFullPath, brandSlug, designerEnabled
             + New page
           </button>
         ) : null}
+
+        {/* Footer: jump back to templates + designer/client toggle. */}
+        <div className="fw-bbook__nav-footer">
+          <Link
+            to="/b/$brandSlug"
+            params={{ brandSlug }}
+            search={designerEnabled ? { designer: '1' as const } : undefined}
+            className="fw-bbook__nav-templates-link"
+            title="Back to templates"
+          >
+            <span>Templates</span>
+            <span aria-hidden>→</span>
+          </Link>
+          <Link
+            to="."
+            search={designerEnabled ? {} : { designer: '1' as const }}
+            replace
+            className="fw-bbook__nav-mode"
+            title={designerEnabled ? 'Switch to client view' : 'Switch to designer view'}
+          >
+            {designerEnabled ? '◐ Client view' : '◑ Designer view'}
+          </Link>
+        </div>
       </nav>
 
       {editingPage ? (

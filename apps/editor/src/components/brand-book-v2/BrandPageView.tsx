@@ -5,6 +5,7 @@ import { useBrandBookContext } from './brandBookContext'
 import { BlockFrame } from './designer/BlockFrame'
 import { BlockLibrary } from './designer/BlockLibrary'
 import { useBlockOps } from './designer/useBlockOps'
+import { PageOutline } from './PageOutline'
 
 /**
  * Renders a single brand-book page: iterates blocks in order. In designer
@@ -50,6 +51,7 @@ export function BrandPageView({ page }: { page: BrandPage }) {
 
   return (
     <article className="fw-bbook__page">
+      {!designerEnabled ? <PageOutline page={page} /> : null}
       {page.blocks.map((block, i) =>
         designerEnabled ? (
           <BlockFrame key={block.id} pageId={page.id} block={block} index={i} total={page.blocks.length}>
