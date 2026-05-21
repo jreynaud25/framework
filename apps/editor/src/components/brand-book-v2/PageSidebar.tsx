@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { BrandPage } from '@framework/types'
 import { pageFullPath } from '@framework/types'
-import type { BrandRecord } from '../brandContext'
+import { useBrandContext, type BrandRecord } from '../brandContext'
 import { PageSettingsModal } from './designer/PageSettingsModal'
+import { BrandSettingsModal } from './designer/BrandSettingsModal'
 
 interface Props {
   pages: BrandPage[]
@@ -43,7 +44,9 @@ export function PageSidebar({
     .sort((a, b) => a.order - b.order)
   const [editingPage, setEditingPage] = useState<BrandPage | null>(null)
   const [creating, setCreating] = useState(false)
+  const [editingBrand, setEditingBrand] = useState(false)
   const [shareFlash, setShareFlash] = useState<string | null>(null)
+  const { reloadBrand } = useBrandContext()
   const navigate = useNavigate()
   const search = designerEnabled ? { designer: '1' as const } : undefined
 
@@ -65,7 +68,13 @@ export function PageSidebar({
             <span className="fw-bbook__brand-head-eyebrow">Brand</span>
           )}
         </div>
-        <div className="fw-bbook__brand-head-name-row">
+        <button
+          type="button"
+          className="fw-bbook__brand-head-name-row"
+          onClick={() => designerEnabled && brand && setEditingBrand(true)}
+          disabled={!designerEnabled || !brand}
+          title={designerEnabled ? 'Edit brand settings' : undefined}
+        >
           {brand?.primaryColor ? (
             <span
               className="fw-bbook__brand-head-dot"
@@ -74,7 +83,10 @@ export function PageSidebar({
             />
           ) : null}
           <span className="fw-bbook__brand-head-name">{brand?.name ?? brandSlug}</span>
-        </div>
+          {designerEnabled && brand ? (
+            <span className="fw-bbook__brand-head-edit" aria-hidden>✎</span>
+          ) : null}
+        </button>
         <div className="fw-bbook__brand-head-actions">
           <button
             type="button"
@@ -213,6 +225,13 @@ export function PageSidebar({
 
       {editingPage ? (
         <PageSettingsModal page={editingPage} onClose={() => setEditingPage(null)} />
+      ) : null}
+      {editingBrand && brand ? (
+        <BrandSettingsModal
+          brand={brand}
+          onClose={() => setEditingBrand(false)}
+          onSaved={() => void reloadBrand()}
+        />
       ) : null}
       {creating ? (
         <PageSettingsModal
