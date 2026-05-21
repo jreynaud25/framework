@@ -673,7 +673,7 @@ function DesignerStyles() {
   return (
     <style>{`
       .fw-designer [data-framework-id] {
-        outline: 1px dashed rgba(255, 255, 255, 0.15);
+        outline: 1px dashed rgba(0, 0, 0, 0.15);
         outline-offset: -1px;
         cursor: pointer;
         transition: outline-color 100ms ease;

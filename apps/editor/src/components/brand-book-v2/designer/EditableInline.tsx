@@ -67,7 +67,15 @@ export function EditableInline({
       contentEditable
       suppressContentEditableWarning
       data-placeholder={placeholder ?? ''}
-      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      // NOTE: we intentionally do NOT stopPropagation on click — the click
+      // bubbles up to BlockFrame so the parent block becomes "selected"
+      // (Inspector shows context) at the same time as the caret lands.
+      onMouseDown={(e: React.MouseEvent) => {
+        // Prevent the parent BlockFrame's drag handler from hijacking
+        // mouse-down inside editable text. Without this, click-and-drag
+        // to select text triggers a block reorder drag instead.
+        e.stopPropagation()
+      }}
       onKeyDown={(e: React.KeyboardEvent) => {
         if (!multiline && e.key === 'Enter') {
           e.preventDefault()

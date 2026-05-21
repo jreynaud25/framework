@@ -28,9 +28,12 @@ export function BlockFrame({ pageId, block, index, total, children }: Props) {
   const isSelected = selection.blockId === block.id
 
   const handleDrop = (e: React.DragEvent) => {
+    // Bail unless this is a block drag (custom MIME). Text drags don't
+    // carry our type, so we leave them alone.
+    if (!e.dataTransfer.types.includes('application/x-fw-block')) return
     e.preventDefault()
     setDropZone(null)
-    const draggedId = e.dataTransfer.getData('text/plain')
+    const draggedId = e.dataTransfer.getData('application/x-fw-block')
     if (!draggedId || draggedId === block.id) return
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const above = e.clientY < rect.top + rect.height / 2
@@ -47,6 +50,13 @@ export function BlockFrame({ pageId, block, index, total, children }: Props) {
         data-block-id={block.id}
         draggable
         onDragStart={(e) => {
+          // Don't hijack text drags from contentEditable areas inside the
+          // block — those should behave natively.
+          const target = e.target as HTMLElement
+          if (target.isContentEditable || target.closest('[contenteditable="true"]')) {
+            return
+          }
+          e.dataTransfer.setData('application/x-fw-block', block.id)
           e.dataTransfer.setData('text/plain', block.id)
           e.dataTransfer.effectAllowed = 'move'
           setIsDragging(true)
@@ -56,6 +66,7 @@ export function BlockFrame({ pageId, block, index, total, children }: Props) {
           setDropZone(null)
         }}
         onDragOver={(e) => {
+          if (!e.dataTransfer.types.includes('application/x-fw-block')) return
           e.preventDefault()
           e.dataTransfer.dropEffect = 'move'
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
