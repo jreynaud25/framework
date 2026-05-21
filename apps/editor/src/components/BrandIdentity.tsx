@@ -3,6 +3,7 @@ import type { BrandTokens } from '@framework/types'
 import { useBrandContext } from './brandContext'
 import { ColorsSection } from './sections/ColorsSection'
 import { TypographySection } from './sections/TypographySection'
+import { AssetsSection } from './sections/AssetsSection'
 
 interface TokensPayload {
   tokens: BrandTokens
@@ -95,6 +96,7 @@ export function BrandIdentity() {
 
       <ColorsSection tokens={tokens} onPatch={patch} readOnly={!designerEnabled} />
       <TypographySection tokens={tokens} onPatch={patch} readOnly={!designerEnabled} />
+      <AssetsSection brandSlug={brandSlug} readOnly={!designerEnabled} />
     </div>
   )
 }
