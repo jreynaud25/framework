@@ -4,6 +4,8 @@ import { useBrandContext } from './brandContext'
 import { ColorsSection } from './sections/ColorsSection'
 import { TypographySection } from './sections/TypographySection'
 import { AssetsSection } from './sections/AssetsSection'
+import { VoiceSection } from './sections/VoiceSection'
+import { ImagerySection } from './sections/ImagerySection'
 
 interface TokensPayload {
   tokens: BrandTokens
@@ -96,6 +98,8 @@ export function BrandIdentity() {
 
       <ColorsSection tokens={tokens} onPatch={patch} readOnly={!designerEnabled} />
       <TypographySection tokens={tokens} onPatch={patch} readOnly={!designerEnabled} />
+      <VoiceSection tokens={tokens} onPatch={patch} readOnly={!designerEnabled} />
+      <ImagerySection tokens={tokens} onPatch={patch} readOnly={!designerEnabled} />
       <AssetsSection brandSlug={brandSlug} readOnly={!designerEnabled} />
     </div>
   )

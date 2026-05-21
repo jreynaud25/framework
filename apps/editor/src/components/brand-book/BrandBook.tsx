@@ -8,6 +8,8 @@ import { TypeSpecimen } from './TypeSpecimen'
 import { LogoGallery } from './LogoGallery'
 import { PhotoGrid } from './PhotoGrid'
 import { PatternsSection } from './PatternsSection'
+import { VoicePage } from './VoicePage'
+import { ImageryPage } from './ImageryPage'
 import type { BrandAsset } from './types'
 
 /**
@@ -65,6 +67,15 @@ export function BrandBook() {
   const photos = assets.filter((a) => a.kind === 'photo')
   const patterns = assets.filter((a) => a.kind === 'pattern')
 
+  const hasVoice =
+    !!tokens.voice &&
+    (tokens.voice.tone.length > 0 ||
+      tokens.voice.vocabulary.preferred.length > 0 ||
+      tokens.voice.vocabulary.avoid.length > 0 ||
+      tokens.voice.forbidden.length > 0)
+  const hasImagery =
+    !!tokens.imagery && (tokens.imagery.dos.length > 0 || tokens.imagery.donts.length > 0)
+
   return (
     <div
       className="fw-bb"
@@ -116,6 +127,18 @@ export function BrandBook() {
       {patterns.length > 0 ? (
         <Section title="Patterns">
           <PatternsSection patterns={patterns} />
+        </Section>
+      ) : null}
+
+      {hasVoice ? (
+        <Section title="Voice & tone">
+          <VoicePage voice={tokens.voice!} />
+        </Section>
+      ) : null}
+
+      {hasImagery ? (
+        <Section title="Imagery">
+          <ImageryPage imagery={tokens.imagery!} />
         </Section>
       ) : null}
     </div>
