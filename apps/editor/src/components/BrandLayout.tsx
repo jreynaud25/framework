@@ -8,6 +8,22 @@ interface Props {
 }
 
 /**
+ * Copy the public client URL (no ?designer=1) to the clipboard. Returns
+ * true if copy succeeded — caller flashes a toast.
+ */
+async function copyClientUrl(brandSlug: string, isGuidelines: boolean): Promise<boolean> {
+  if (typeof window === 'undefined') return false
+  const path = isGuidelines ? `/b/${brandSlug}/guidelines` : `/b/${brandSlug}`
+  const url = `${window.location.origin}${path}`
+  try {
+    await navigator.clipboard.writeText(url)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Layout for /b/[brandSlug] and its sub-routes. Owns the shared header
  * (back-link, brand name, primary color swatch) and the tab bar that
  * switches between Templates and Brand identity. The current brand record
@@ -15,8 +31,15 @@ interface Props {
  */
 export function BrandLayout({ brandSlug, designerEnabled }: Props) {
   const [brand, setBrand] = useState<BrandRecord | null>(null)
+  const [shareFlash, setShareFlash] = useState<string | null>(null)
   const location = useLocation()
   const isGuidelines = location.pathname.endsWith('/guidelines')
+
+  async function handleShare() {
+    const ok = await copyClientUrl(brandSlug, isGuidelines)
+    setShareFlash(ok ? 'Link copied' : 'Copy failed')
+    window.setTimeout(() => setShareFlash(null), 1800)
+  }
 
   const reload = useCallback(async () => {
     try {
@@ -33,36 +56,61 @@ export function BrandLayout({ brandSlug, designerEnabled }: Props) {
 
   return (
     <BrandContext.Provider value={{ brand, brandSlug, designerEnabled, reloadBrand: reload }}>
-      <div className="mx-auto w-full max-w-6xl px-8 py-12">
-        <header className="mb-6">
-          {designerEnabled ? (
-            <Link
-              to="/d"
-              className="text-[10px] tracking-[0.15em] uppercase text-[var(--muted)] hover:text-[var(--fg)]"
+      <div className="mx-auto w-full max-w-6xl px-8 py-12 print:max-w-none print:px-0 print:py-0">
+        <header className="mb-6 flex items-start justify-between gap-4 print:hidden">
+          <div>
+            {designerEnabled ? (
+              <Link
+                to="/d"
+                className="text-[10px] tracking-[0.15em] uppercase text-[var(--muted)] hover:text-[var(--fg)]"
+              >
+                ← Studio
+              </Link>
+            ) : (
+              <div className="text-[10px] tracking-[0.15em] uppercase text-[var(--muted)]">Brand</div>
+            )}
+            <div className="mt-1 flex items-center gap-3">
+              <h1 className="text-[28px] font-medium leading-tight">{brand?.name ?? brandSlug}</h1>
+              {brand?.primaryColor ? (
+                <span
+                  className="inline-block rounded-full border border-[var(--line)]"
+                  style={{ width: 16, height: 16, background: brand.primaryColor }}
+                  title={brand.primaryColor}
+                />
+              ) : null}
+            </div>
+            <p className="mt-2 text-[13px] text-[var(--muted)]">
+              <span className="font-mono">/b/{brandSlug}</span>
+              {brand?.industry ? ` · ${brand.industry}` : ''}
+              {designerEnabled ? ' · designer view' : ' · your space'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            {shareFlash ? (
+              <span className="text-[10px] text-[var(--muted)]">{shareFlash}</span>
+            ) : null}
+            <button
+              type="button"
+              className="fw-chip"
+              onClick={() => void handleShare()}
+              title="Copy the public URL to share with the client"
             >
-              ← Studio
-            </Link>
-          ) : (
-            <div className="text-[10px] tracking-[0.15em] uppercase text-[var(--muted)]">Brand</div>
-          )}
-          <div className="mt-1 flex items-center gap-3">
-            <h1 className="text-[28px] font-medium leading-tight">{brand?.name ?? brandSlug}</h1>
-            {brand?.primaryColor ? (
-              <span
-                className="inline-block rounded-full border border-[var(--line)]"
-                style={{ width: 16, height: 16, background: brand.primaryColor }}
-                title={brand.primaryColor}
-              />
+              Share link
+            </button>
+            {isGuidelines && !designerEnabled ? (
+              <button
+                type="button"
+                className="fw-chip"
+                onClick={() => window.print()}
+                title="Print brand book"
+              >
+                Print
+              </button>
             ) : null}
           </div>
-          <p className="mt-2 text-[13px] text-[var(--muted)]">
-            <span className="font-mono">/b/{brandSlug}</span>
-            {brand?.industry ? ` · ${brand.industry}` : ''}
-            {designerEnabled ? ' · designer view' : ' · your space'}
-          </p>
         </header>
 
-        <div className="mb-8 flex items-center gap-1 border-b border-[var(--line)]">
+        <div className="mb-8 flex items-center gap-1 border-b border-[var(--line)] print:hidden">
           <Link
             to="/b/$brandSlug"
             params={{ brandSlug }}
