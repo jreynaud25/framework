@@ -5,11 +5,14 @@ export const Route = createFileRoute('/b/$brandSlug/')({
   component: TemplatesRoute,
 })
 
+/**
+ * Templates view, rendered inside the brand-book main column. The
+ * BrandBookLayout's sidebar continues to show the page tree on the left;
+ * clicking "Templates" in the sidebar footer lands here.
+ */
 function TemplatesRoute() {
-  // BrandLayout no longer constrains the Outlet's width, so the templates
-  // view supplies its own max-w container.
   return (
-    <div className="mx-auto w-full max-w-6xl px-8 pb-12">
+    <div className="fw-bbook__page">
       <TemplatesView />
     </div>
   )

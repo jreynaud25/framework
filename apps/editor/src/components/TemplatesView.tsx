@@ -18,7 +18,7 @@ interface BrandTemplate {
 }
 
 /**
- * Templates grid for a brand. Reads brand context from <BrandLayout>.
+ * Templates grid for a brand. Reads brand context from <BrandBookLayout>.
  * Client mode: only published templates + optional "Show archived" toggle.
  * Designer mode: all statuses with badges + "Edit brand" inline form.
  */

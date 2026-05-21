@@ -2163,3 +2163,69 @@ img[data-framework-id]:active {
   color: var(--bbook-fg);
   background: var(--bbook-surface-2);
 }
+
+/* ── Sidebar brand header (brand name + share/print actions) ─ */
+.fw-bbook__brand-head {
+  padding: 0 1rem 1rem;
+  border-bottom: 1px solid var(--bbook-line);
+  margin: 0 -1rem 1rem;
+}
+.fw-bbook__brand-head-row { margin-bottom: 0.5rem; }
+.fw-bbook__brand-head-back,
+.fw-bbook__brand-head-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--bbook-muted);
+  text-decoration: none;
+}
+.fw-bbook__brand-head-back:hover { color: var(--bbook-fg); }
+.fw-bbook__brand-head-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+.fw-bbook__brand-head-name {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.fw-bbook__brand-head-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--bbook-line);
+  flex: 0 0 auto;
+}
+.fw-bbook__brand-head-actions {
+  display: flex;
+  gap: 6px;
+}
+.fw-bbook__brand-head-btn {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--bbook-line-2);
+  background: var(--bbook-bg);
+  color: var(--bbook-fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+.fw-bbook__brand-head-btn:hover {
+  background: var(--bbook-fg);
+  color: var(--bbook-bg);
+  border-color: var(--bbook-fg);
+}
+
+/* Make Templates link in the footer match its active state when on /b/<slug> */
+.fw-bbook__nav-templates-link.is-active {
+  background: var(--bbook-fg);
+  color: var(--bbook-bg);
+}
+
+/* When the templates view renders inside fw-bbook__main, give it the same
+   padding context as a page so it doesn't feel adrift. */
+.fw-bbook__page > * { color: var(--bbook-fg); }

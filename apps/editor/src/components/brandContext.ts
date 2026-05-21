@@ -25,7 +25,7 @@ export const BrandContext = createContext<BrandContextValue | null>(null)
 export function useBrandContext(): BrandContextValue {
   const ctx = useContext(BrandContext)
   if (!ctx) {
-    throw new Error('useBrandContext must be used inside <BrandLayout>')
+    throw new Error('useBrandContext must be used inside <BrandBookLayout>')
   }
   return ctx
 }

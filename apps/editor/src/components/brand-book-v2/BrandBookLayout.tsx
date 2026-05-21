@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation } from '@tanstack/react-router'
 import type { BrandBook, BrandPage, BrandTokens } from '@framework/types'
 import type { BrandAsset } from '../brand-book/types'
-import { useBrandContext } from '../brandContext'
+import { BrandContext, type BrandRecord } from '../brandContext'
 import {
   BrandBookContext,
   type BrandBookContextValue,
@@ -11,15 +11,25 @@ import {
 import { PageSidebar } from './PageSidebar'
 import { BlockInspector } from './designer/BlockInspector'
 
-/**
- * Layout for /b/<slug>/guidelines. Owns the book + tokens + assets fetch,
- * keeps them in context for every child page, renders the left page-tree
- * sidebar. Child routes render in <Outlet />.
- */
-export function BrandBookLayout() {
-  const { brandSlug, designerEnabled } = useBrandContext()
-  const location = useLocation()
+interface Props {
+  brandSlug: string
+  designerEnabled: boolean
+}
 
+/**
+ * The full brand shell. Mounts on /b/<slug> and owns:
+ *   - brand record fetch + BrandContext (for templates view + sub-components)
+ *   - book + tokens + assets fetch + BrandBookContext
+ *   - left sidebar (brand header, page tree, Templates link, footer)
+ *   - right Outlet — renders the current page or the Templates view
+ *   - designer-mode inspector pane (when a block is selected)
+ *
+ * There is no separate header / max-w container above this layout; the
+ * brand book IS the surface.
+ */
+export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
+  const location = useLocation()
+  const [brand, setBrand] = useState<BrandRecord | null>(null)
   const [book, setBook] = useState<BrandBook | null>(null)
   const [tokens, setTokens] = useState<BrandTokens | null>(null)
   const [assets, setAssets] = useState<BrandAsset[]>([])
@@ -28,6 +38,15 @@ export function BrandBookLayout() {
     pageId: null,
     blockId: null,
   })
+
+  const reloadBrand = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}`)
+      if (res.ok) setBrand((await res.json()) as BrandRecord)
+    } catch {
+      /* brand record optional — falls back to slug */
+    }
+  }, [brandSlug])
 
   const reloadBook = useCallback(async () => {
     try {
@@ -42,6 +61,9 @@ export function BrandBookLayout() {
   useEffect(() => {
     let cancelled = false
     Promise.all([
+      fetch(`/api/brands/${encodeURIComponent(brandSlug)}`).then((r) =>
+        r.ok ? r.json() : Promise.resolve(null),
+      ),
       fetch(`/api/brands/${encodeURIComponent(brandSlug)}/book`).then((r) =>
         r.ok ? r.json() : Promise.reject(new Error(`book HTTP ${r.status}`)),
       ),
@@ -52,12 +74,20 @@ export function BrandBookLayout() {
         r.ok ? r.json() : Promise.resolve({ assets: [] }),
       ),
     ])
-      .then(([b, t, a]: [BrandBook, { tokens: BrandTokens }, { assets: BrandAsset[] }]) => {
-        if (cancelled) return
-        setBook(b)
-        setTokens(t.tokens)
-        setAssets(a.assets)
-      })
+      .then(
+        ([br, b, t, a]: [
+          BrandRecord | null,
+          BrandBook,
+          { tokens: BrandTokens },
+          { assets: BrandAsset[] },
+        ]) => {
+          if (cancelled) return
+          setBrand(br)
+          setBook(b)
+          setTokens(t.tokens)
+          setAssets(a.assets)
+        },
+      )
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err))
       })
@@ -90,15 +120,22 @@ export function BrandBookLayout() {
     [brandSlug],
   )
 
-  // Pull the page-slug portion out of the URL to drive sidebar active-state.
-  // location.pathname looks like /b/<slug>/guidelines or .../guidelines/<page>
-  // or .../guidelines/<page>/<child>. Empty string when on index.
+  // Sidebar active-state. Three cases:
+  //   /b/<slug>                     → templates (currentFullPath = '__templates')
+  //   /b/<slug>/guidelines          → no page selected, '' (handled by redirect)
+  //   /b/<slug>/guidelines/<page>   → currentFullPath = <page> or <page>/<child>
   const currentFullPath = useMemo(() => {
+    if (!location.pathname.includes('/guidelines')) return '__templates'
     const m = location.pathname.match(/\/guidelines(?:\/(.+))?$/)
     return m?.[1] ?? ''
   }, [location.pathname])
 
-  const ctxValue: BrandBookContextValue | null = useMemo(() => {
+  const brandCtx = useMemo(
+    () => ({ brand, brandSlug, designerEnabled, reloadBrand }),
+    [brand, brandSlug, designerEnabled, reloadBrand],
+  )
+
+  const bookCtx: BrandBookContextValue | null = useMemo(() => {
     if (!book || !tokens) return null
     return {
       book,
@@ -114,40 +151,42 @@ export function BrandBookLayout() {
   }, [book, tokens, assets, brandSlug, designerEnabled, selection, reloadBook, patchPage])
 
   if (error) {
-    return <div className="text-[12px] text-[var(--danger)]">{error}</div>
+    return <div className="fw-bbook__empty" style={{ margin: '2rem' }}>{error}</div>
   }
-  if (!ctxValue) {
-    return <div className="text-[12px] text-[var(--muted)]">Loading…</div>
+  if (!bookCtx) {
+    return <div className="fw-bbook__empty" style={{ margin: '2rem' }}>Loading…</div>
   }
 
-  const inspectorVisible = designerEnabled && !!ctxValue.selection.blockId
+  const inspectorVisible = designerEnabled && !!bookCtx.selection.blockId
 
   return (
-    <BrandBookContext.Provider value={ctxValue}>
-      <div
-        className={`fw-bbook ${designerEnabled ? 'is-designer' : ''} ${
-          inspectorVisible ? 'is-editing' : ''
-        }`}
-        onClick={() => {
-          // Click on empty area deselects; child handlers stopPropagation.
-          if (designerEnabled && ctxValue.selection.blockId) {
-            setSelection({ pageId: null, blockId: null })
-          }
-        }}
-      >
-        <aside className="fw-bbook__sidebar print:hidden">
-          <PageSidebar
-            pages={ctxValue.book.pages}
-            currentFullPath={currentFullPath}
-            brandSlug={brandSlug}
-            designerEnabled={designerEnabled}
-          />
-        </aside>
-        <main className="fw-bbook__main">
-          <Outlet />
-        </main>
-        {inspectorVisible ? <BlockInspector /> : null}
-      </div>
-    </BrandBookContext.Provider>
+    <BrandContext.Provider value={brandCtx}>
+      <BrandBookContext.Provider value={bookCtx}>
+        <div
+          className={`fw-bbook ${designerEnabled ? 'is-designer' : ''} ${
+            inspectorVisible ? 'is-editing' : ''
+          }`}
+          onClick={() => {
+            if (designerEnabled && bookCtx.selection.blockId) {
+              setSelection({ pageId: null, blockId: null })
+            }
+          }}
+        >
+          <aside className="fw-bbook__sidebar print:hidden">
+            <PageSidebar
+              pages={bookCtx.book.pages}
+              currentFullPath={currentFullPath}
+              brandSlug={brandSlug}
+              designerEnabled={designerEnabled}
+              brand={brand}
+            />
+          </aside>
+          <main className="fw-bbook__main">
+            <Outlet />
+          </main>
+          {inspectorVisible ? <BlockInspector /> : null}
+        </div>
+      </BrandBookContext.Provider>
+    </BrandContext.Provider>
   )
 }

@@ -1,19 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BrandLayout } from '@/components/BrandLayout'
+import { BrandBookLayout } from '@/components/brand-book-v2/BrandBookLayout'
 
 export interface BrandHubSearch {
   designer?: '1'
 }
 
+/**
+ * Top-level brand surface. There is no separate header chrome; the
+ * BrandBookLayout owns the sidebar + main grid for both the templates
+ * view and the brand-book pages.
+ */
 export const Route = createFileRoute('/b/$brandSlug')({
   validateSearch: (raw: Record<string, unknown>): BrandHubSearch => ({
     designer: String(raw.designer) === '1' ? '1' : undefined,
   }),
-  component: BrandLayoutRoute,
+  component: BrandRoute,
 })
 
-function BrandLayoutRoute() {
+function BrandRoute() {
   const { brandSlug } = Route.useParams()
   const search = Route.useSearch()
-  return <BrandLayout brandSlug={brandSlug} designerEnabled={search.designer === '1'} />
+  return <BrandBookLayout brandSlug={brandSlug} designerEnabled={search.designer === '1'} />
 }
