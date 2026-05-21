@@ -1,5 +1,8 @@
 import type { HeroBlock } from '@framework/types'
 import { useBrandBookContext, findAsset } from '../brandBookContext'
+import { useCurrentPageId } from '../currentPageContext'
+import { useBlockOps } from '../designer/useBlockOps'
+import { EditableInline } from '../designer/EditableInline'
 import { contrastTextFor } from '../../brand-book/contrast'
 
 const HEIGHTS = { sm: 240, md: 360, lg: 480 } as const
@@ -7,10 +10,14 @@ const HEIGHTS = { sm: 240, md: 360, lg: 480 } as const
 /**
  * Full-content-width hero. Background is the brand primary by default;
  * can be a custom color, an asset image, or none (neutral surface). Text
- * color auto-adapts to bg luminance.
+ * color auto-adapts to bg luminance. Title + subtitle are inline-editable
+ * in designer mode.
  */
 export function HeroBlockView({ block }: { block: HeroBlock }) {
-  const { tokens, assets } = useBrandBookContext()
+  const { tokens, assets, designerEnabled } = useBrandBookContext()
+  const pageId = useCurrentPageId()
+  const { updateBlock } = useBlockOps()
+  const editable = designerEnabled && !!pageId
 
   let bg: string | undefined
   let bgImage: string | undefined
@@ -46,8 +53,26 @@ export function HeroBlockView({ block }: { block: HeroBlock }) {
       }}
     >
       <div className="fw-bbook__hero-inner">
-        <h1 style={{ fontFamily: headingFont }}>{block.title}</h1>
-        {block.subtitle ? <p>{block.subtitle}</p> : null}
+        <EditableInline
+          as="h1"
+          value={block.title}
+          editable={editable}
+          placeholder="Hero title"
+          style={{ fontFamily: headingFont }}
+          onCommit={(next) => pageId && updateBlock(pageId, block.id, { title: next })}
+        />
+        {block.subtitle || editable ? (
+          <EditableInline
+            as="p"
+            value={block.subtitle ?? ''}
+            editable={editable}
+            multiline
+            placeholder="Subtitle (optional)"
+            onCommit={(next) =>
+              pageId && updateBlock(pageId, block.id, { subtitle: next || undefined })
+            }
+          />
+        ) : null}
       </div>
     </div>
   )

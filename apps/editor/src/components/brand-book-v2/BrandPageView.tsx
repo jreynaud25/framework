@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { BrandPage } from '@framework/types'
 import { BlockRenderer } from './BlockRenderer'
 import { useBrandBookContext } from './brandBookContext'
+import { CurrentPageContext } from './currentPageContext'
 import { BlockFrame } from './designer/BlockFrame'
 import { BlockLibrary } from './designer/BlockLibrary'
 import { useBlockOps } from './designer/useBlockOps'
@@ -50,12 +51,24 @@ export function BrandPageView({ page }: { page: BrandPage }) {
   }
 
   return (
-    <article className="fw-bbook__page">
-      {!designerEnabled ? <PageOutline page={page} /> : null}
-      {page.blocks.map((block, i) =>
-        designerEnabled ? (
-          <BlockFrame key={block.id} pageId={page.id} block={block} index={i} total={page.blocks.length}>
+    <CurrentPageContext.Provider value={{ pageId: page.id }}>
+      <article className="fw-bbook__page">
+        {!designerEnabled ? <PageOutline page={page} /> : null}
+        {page.blocks.map((block, i) =>
+          designerEnabled ? (
+            <BlockFrame key={block.id} pageId={page.id} block={block} index={i} total={page.blocks.length}>
+              <div
+                className="fw-bbook__block"
+                style={block.bottomGap !== undefined ? { marginBottom: block.bottomGap } : undefined}
+                data-block-id={block.id}
+                data-block-kind={block.kind}
+              >
+                <BlockRenderer block={block} />
+              </div>
+            </BlockFrame>
+          ) : (
             <div
+              key={block.id}
               className="fw-bbook__block"
               style={block.bottomGap !== undefined ? { marginBottom: block.bottomGap } : undefined}
               data-block-id={block.id}
@@ -63,19 +76,9 @@ export function BrandPageView({ page }: { page: BrandPage }) {
             >
               <BlockRenderer block={block} />
             </div>
-          </BlockFrame>
-        ) : (
-          <div
-            key={block.id}
-            className="fw-bbook__block"
-            style={block.bottomGap !== undefined ? { marginBottom: block.bottomGap } : undefined}
-            data-block-id={block.id}
-            data-block-kind={block.kind}
-          >
-            <BlockRenderer block={block} />
-          </div>
-        ),
-      )}
-    </article>
+          ),
+        )}
+      </article>
+    </CurrentPageContext.Provider>
   )
 }

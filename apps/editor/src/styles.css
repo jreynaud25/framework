@@ -2384,3 +2384,31 @@ button.fw-bbook__brand-head-name-row:hover .fw-bbook__brand-head-edit { opacity:
   background: #dcfce7;     /* green-100 */
   color: #166534;          /* green-800 */
 }
+
+/* ── Inline-editable text (contentEditable in designer mode) ── */
+.fw-bbook-edit__inline {
+  outline: none;
+  border-radius: 4px;
+  transition: background 80ms ease, box-shadow 80ms ease;
+}
+.fw-bbook-edit__inline:focus {
+  background: rgba(10, 132, 255, 0.06);
+  box-shadow: inset 0 0 0 2px rgba(10, 132, 255, 0.35);
+}
+.fw-bbook-edit__inline.is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--bbook-muted-2);
+  font-style: italic;
+}
+.fw-bbook-edit__inline.is-empty:focus::before {
+  /* hide placeholder once user puts caret in */
+  display: none;
+}
+.fw-bbook__text--editing {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--bbook-surface-2);
+  padding: 14px 18px;
+}
