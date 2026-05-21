@@ -1,4 +1,4 @@
-import type { AssetKind, ExtractedAsset } from '../types'
+import type { AssetKind, Destination, ExtractedAsset } from '../types'
 
 /**
  * Parse a Figma layer name to detect what kind of brand asset it represents.
@@ -9,7 +9,8 @@ import type { AssetKind, ExtractedAsset } from '../types'
  *   icon/<name>         → kind: 'icon', variant: <name>
  *
  * Returns null if the name doesn't match — the node will be treated as a
- * template instead.
+ * template instead. Kept for backwards compat with legacy push paths; the
+ * new destination-driven flow uses classify.ts instead.
  */
 export function parseAssetKind(
   name: string,
@@ -23,42 +24,68 @@ export function parseAssetKind(
 }
 
 /**
- * Export a Figma node into a data URL.
- *   - logos prefer SVG (scalable, small)
- *   - photo/pattern/icon use PNG
- *
- * SVG fallbacks to PNG if Figma rejects the export (e.g. complex effects).
+ * Legacy export — used by request-extract-mixed. Wraps the destination-
+ * driven exportAssetForDestination by parsing the layer name first.
  */
 export async function extractAssetFromNode(
   node: SceneNode,
 ): Promise<ExtractedAsset | null> {
   const parsed = parseAssetKind(node.name)
   if (!parsed) return null
+  const dest: Destination =
+    parsed.kind === 'logo'
+      ? { kind: 'logo', variant: (parsed.variant as never) ?? 'primary' }
+      : ({ kind: parsed.kind } as Destination)
+  return exportAssetForDestination(node, dest, parsed.variant)
+}
 
+/**
+ * Export a node into a data URL given the chosen destination kind:
+ *   - logo → SVG (PNG fallback if Figma rejects SVG)
+ *   - photo/pattern/icon → PNG at sensible resolution
+ *
+ * The `variantOverride` lets the caller hint a sub-variant (e.g. "wordmark"
+ * for a logo, or just the source layer-name suffix for assets that don't
+ * have an enum-bound variant).
+ */
+export async function exportAssetForDestination(
+  node: SceneNode,
+  destination: Destination,
+  variantOverride?: string,
+): Promise<ExtractedAsset | null> {
+  if (
+    destination.kind !== 'logo' &&
+    destination.kind !== 'photo' &&
+    destination.kind !== 'pattern' &&
+    destination.kind !== 'icon'
+  ) {
+    return null
+  }
   const width = 'width' in node ? Math.round(node.width) : 0
   const height = 'height' in node ? Math.round(node.height) : 0
+  const exportable = node as SceneNode & {
+    exportAsync: (settings: ExportSettings) => Promise<Uint8Array>
+  }
 
-  if (parsed.kind === 'logo') {
+  if (destination.kind === 'logo') {
     try {
-      const svgBytes = await node.exportAsync({ format: 'SVG' })
+      const svgBytes = await exportable.exportAsync({ format: 'SVG' })
       return {
         kind: 'logo',
-        variant: parsed.variant ?? 'primary',
+        variant: destination.variant,
         label: node.name,
         dataUrl: `data:image/svg+xml;base64,${bytesToBase64(svgBytes)}`,
         width,
         height,
       }
     } catch {
-      // Some nodes (e.g. ones with complex effects) can't export SVG.
-      // Fallback to a high-res PNG so the logo still appears.
-      const pngBytes = await node.exportAsync({
+      const pngBytes = await exportable.exportAsync({
         format: 'PNG',
         constraint: { type: 'WIDTH', value: 1024 },
       })
       return {
         kind: 'logo',
-        variant: parsed.variant ?? 'primary',
+        variant: destination.variant,
         label: node.name,
         dataUrl: `data:image/png;base64,${bytesToBase64(pngBytes)}`,
         width,
@@ -67,15 +94,15 @@ export async function extractAssetFromNode(
     }
   }
 
-  // photo / pattern / icon → PNG at sensible resolution.
-  const targetWidth = parsed.kind === 'photo' ? 2000 : 1024
-  const pngBytes = await node.exportAsync({
+  // photo / pattern / icon → PNG at sensible resolution
+  const targetWidth = destination.kind === 'photo' ? 2000 : 1024
+  const pngBytes = await exportable.exportAsync({
     format: 'PNG',
     constraint: { type: 'WIDTH', value: targetWidth },
   })
   return {
-    kind: parsed.kind,
-    variant: parsed.variant,
+    kind: destination.kind,
+    variant: variantOverride,
     label: node.name,
     dataUrl: `data:image/png;base64,${bytesToBase64(pngBytes)}`,
     width,
@@ -83,11 +110,6 @@ export async function extractAssetFromNode(
   }
 }
 
-/**
- * Convert a Uint8Array of binary bytes into a base64 string. Loop avoids
- * the "call stack exceeded" issue with `String.fromCharCode(...bytes)` on
- * large arrays.
- */
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = ''
   for (let i = 0; i < bytes.length; i++) {

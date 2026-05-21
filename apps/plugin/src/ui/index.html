@@ -7,6 +7,8 @@
       :root {
         color-scheme: dark light;
         --bg: var(--figma-color-bg, #1e1e1e);
+        --bg-2: var(--figma-color-bg-secondary, rgba(255, 255, 255, 0.04));
+        --bg-3: var(--figma-color-bg-tertiary, rgba(255, 255, 255, 0.08));
         --fg: var(--figma-color-text, #fff);
         --muted: var(--figma-color-text-secondary, rgba(255, 255, 255, 0.5));
         --line: var(--figma-color-border, rgba(255, 255, 255, 0.1));
@@ -30,83 +32,108 @@
       }
       header h1 { margin: 0; font-size: 13px; letter-spacing: -0.01em; }
       header .v { color: var(--muted); font-size: 11px; }
-      main { flex: 1; overflow: auto; padding: 16px; }
-      footer {
-        border-top: 1px solid var(--line);
-        padding: 12px 16px;
-        display: flex; gap: 8px; justify-content: flex-end;
-      }
-      label { display: block; font-size: 11px; color: var(--muted); margin: 0 0 4px; }
-      input[type=text] {
-        width: 100%; background: transparent; color: var(--fg);
-        border: 1px solid var(--line); border-radius: 6px;
-        padding: 8px 10px; font: inherit;
-      }
-      input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-      input[type=email] {
-        width: 100%; background: transparent; color: var(--fg);
-        border: 1px solid var(--line); border-radius: 6px;
-        padding: 8px 10px; font: inherit;
-      }
-      input[type=email]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-      select {
-        width: 100%; background: transparent; color: var(--fg);
-        border: 1px solid var(--line); border-radius: 6px;
-        padding: 8px 10px; font: inherit;
-        appearance: none;
-        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23888' d='M0 0l5 6 5-6z'/></svg>");
-        background-repeat: no-repeat;
-        background-position: right 10px center;
-        padding-right: 28px;
-      }
-      select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-      .link {
-        font: inherit; padding: 0; border: 0; background: 0;
-        color: var(--muted); font-size: 11px; cursor: pointer;
-      }
-      .link:hover { color: var(--fg); }
-      .industry-pills {
-        display: flex; gap: 4px; flex-wrap: wrap;
-      }
-      .industry-pills button {
-        padding: 4px 8px; border: 1px solid var(--line); background: transparent;
-        color: var(--muted); font-size: 11px; border-radius: 4px; cursor: pointer;
-      }
-      .industry-pills button:hover { color: var(--fg); }
-      .industry-pills button[data-active='true'] {
-        background: var(--accent); color: var(--accent-fg); border-color: var(--accent);
-      }
-      .row { display: flex; gap: 8px; align-items: center; }
-      .stack > * + * { margin-top: 12px; }
-      .frame {
-        border: 1px solid var(--line); border-radius: 6px;
-        padding: 8px 10px; display: flex; justify-content: space-between;
-        font-size: 12px;
-      }
-      .frame .dim { color: var(--muted); font-variant-numeric: tabular-nums; }
-      .empty { color: var(--muted); font-size: 12px; }
+
       .tabs { display: flex; gap: 4px; padding: 12px 16px 0; }
       .tab {
         padding: 6px 10px; border-radius: 6px; cursor: pointer;
         color: var(--muted); font-size: 12px;
       }
       .tab[aria-selected=true] { color: var(--fg); background: var(--line); }
+
+      main { flex: 1; overflow: auto; padding: 16px; }
+
+      label { display: block; font-size: 11px; color: var(--muted); margin: 0 0 4px; }
+      input[type=text], input[type=email], select {
+        width: 100%; background: transparent; color: var(--fg);
+        border: 1px solid var(--line); border-radius: 6px;
+        padding: 8px 10px; font: inherit;
+      }
+      select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23888' d='M0 0l5 6 5-6z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+      }
+      input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+      .link {
+        font: inherit; padding: 0; border: 0; background: 0;
+        color: var(--muted); font-size: 11px; cursor: pointer;
+      }
+      .link:hover { color: var(--fg); }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .stack > * + * { margin-top: 12px; }
+      .empty { color: var(--muted); font-size: 12px; padding: 12px; text-align: center; border: 1px dashed var(--line); border-radius: 6px; }
+
+      /* Frame card — one per selected frame. */
+      .frame-card {
+        background: var(--bg-2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .frame-card + .frame-card { margin-top: 8px; }
+      .frame-card__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .frame-card__name {
+        font-size: 13px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .frame-card__dim {
+        font-size: 10px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        flex: 0 0 auto;
+      }
+      .frame-card__why {
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+      }
+      .frame-card__dest, .frame-card__sub {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+      .frame-card__dest label, .frame-card__sub label {
+        margin: 0;
+        font-size: 11px;
+      }
+
       button {
         font: inherit; padding: 8px 12px; border-radius: 6px;
         border: 1px solid var(--line); background: transparent;
         color: var(--fg); cursor: pointer;
       }
-      button.primary {
-        background: var(--accent); color: var(--accent-fg); border-color: var(--accent);
-      }
+      button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
       button:disabled { opacity: 0.4; cursor: not-allowed; }
+
       .log {
-        margin-top: 12px; max-height: 120px; overflow: auto;
+        margin-top: 12px; max-height: 140px; overflow: auto;
         font-family: 'SF Mono', ui-monospace, monospace; font-size: 11px;
         color: var(--muted); white-space: pre-wrap;
       }
       .log .err { color: #ff6e6e; }
       .log .ok { color: #6ee7b7; }
+      .log-link { color: #6ee7b7; text-decoration: underline; cursor: pointer; }
+
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 12px 16px;
+        display: flex; gap: 8px; justify-content: flex-end;
+      }
       details summary { cursor: pointer; font-size: 12px; color: var(--muted); }
       pre { font-size: 11px; max-height: 200px; overflow: auto; }
     </style>
@@ -115,17 +142,18 @@
     <div class="app">
       <header>
         <h1>Framework</h1>
-        <span class="v">v2</span>
+        <span class="v">v3</span>
       </header>
 
       <div class="tabs" role="tablist">
-        <div class="tab" role="tab" aria-selected="true" data-tab="template">Push template</div>
-        <div class="tab" role="tab" aria-selected="false" data-tab="tokens">Brand tokens</div>
+        <div class="tab" role="tab" aria-selected="true" data-tab="push">Push</div>
+        <div class="tab" role="tab" aria-selected="false" data-tab="tokens">Bulk tokens</div>
         <div class="tab" role="tab" aria-selected="false" data-tab="settings">Settings</div>
       </div>
 
       <main>
-        <section class="panel" data-panel="template">
+        <!-- ──────── Push panel (destination-driven) ──────── -->
+        <section class="panel" data-panel="push">
           <div class="stack">
             <div>
               <label for="brand-select">Send to brand</label>
@@ -139,41 +167,43 @@
             </div>
 
             <div id="brand-create-form" hidden>
-              <div class="stack" style="gap: 8px; padding: 10px; background: rgba(255,255,255,0.04); border-radius: 6px;">
+              <div class="stack" style="gap: 8px; padding: 10px; background: var(--bg-2); border-radius: 6px;">
                 <input id="new-brand-name" type="text" placeholder="Brand name" />
                 <div class="row" style="justify-content: space-between; align-items: center;">
-                  <span class="dim" style="font-size: 10px;">Configure details on the dashboard later</span>
+                  <span style="font-size: 10px; color: var(--muted);">Configure details on the dashboard later</span>
                   <button id="new-brand-submit" type="button" class="primary">Create</button>
                 </div>
-                <div id="new-brand-error" class="err" hidden></div>
+                <div id="new-brand-error" class="err" hidden style="font-size: 11px; color: #ff6e6e;"></div>
               </div>
             </div>
 
             <div>
-              <label for="name">Template name <span style="opacity:.5">(auto-filled from frame)</span></label>
-              <input id="name" type="text" placeholder="Spring Drop" />
+              <label for="template-name">Template name <span style="opacity:.5">(if pushing a template)</span></label>
+              <input id="template-name" type="text" placeholder="Spring Drop" />
             </div>
+
             <div>
-              <label>Selected frame</label>
-              <div id="selection" class="stack"><div class="empty">Click a frame in Figma to select it.</div></div>
+              <label>Selection</label>
+              <div id="frame-list"><div class="empty">Select one or more frames in Figma to start.</div></div>
             </div>
           </div>
         </section>
 
+        <!-- ──────── Bulk tokens panel ──────── -->
         <section class="panel" data-panel="tokens" hidden>
           <div class="stack">
-            <p class="empty">
-              Extract brand colors, typography and logos from local styles. Push them to your brand
-              hub at <code>{slug}.frame-work.app</code>.
+            <p style="color: var(--muted); font-size: 12px;">
+              One-shot extraction of every brand color, text style and "logo/…" frame found in this
+              Figma file. Pushes everything to the selected brand's tokens. Use the <strong>Push</strong>
+              tab for granular per-frame control.
             </p>
-            <div>
-              <label for="brand-tokens">Push to</label>
-              <input id="brand-tokens" type="text" placeholder="brand-slug" />
-            </div>
-            <details><summary>Last preview</summary><pre id="tokens-preview"></pre></details>
+            <p style="color: var(--muted); font-size: 12px;">
+              Brand is taken from the selector on the Push tab.
+            </p>
           </div>
         </section>
 
+        <!-- ──────── Settings panel ──────── -->
         <section class="panel" data-panel="settings" hidden>
           <div class="stack">
             <div>
@@ -184,7 +214,7 @@
               <label for="editor-base">Editor URL</label>
               <input id="editor-base" type="text" value="http://localhost:3001" />
             </div>
-            <p class="empty">
+            <p style="color: var(--muted); font-size: 12px;">
               Dev defaults: API on <code>:3000</code> (Next.js), editor on <code>:3001</code> (Vite).
               After a successful push, the plugin opens the editor URL automatically.
             </p>
