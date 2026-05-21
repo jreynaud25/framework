@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from '@tanstack/react-router'
 import type { BrandBook, BrandPage, BrandTokens } from '@framework/types'
 import type { BrandAsset } from '../brand-book/types'
 import { BrandContext, type BrandRecord } from '../brandContext'
+import { toast } from '../toast'
 import {
   BrandBookContext,
   type BrandBookContextValue,
@@ -16,6 +17,8 @@ interface Props {
   designerEnabled: boolean
 }
 
+const UNDO_LIMIT = 20
+
 /**
  * The full brand shell. Mounts on /b/<slug> and owns:
  *   - brand record fetch + BrandContext (for templates view + sub-components)
@@ -23,6 +26,7 @@ interface Props {
  *   - left sidebar (brand header, page tree, Templates link, footer)
  *   - right Outlet — renders the current page or the Templates view
  *   - designer-mode inspector pane (when a block is selected)
+ *   - saving state + undo stack + ⌘Z keyboard shortcut
  *
  * There is no separate header / max-w container above this layout; the
  * brand book IS the surface.
@@ -38,6 +42,14 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
     pageId: null,
     blockId: null,
   })
+  const [saving, setSaving] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
+
+  // Undo stack — last N book snapshots. Pushed BEFORE each mutating call so
+  // we can restore the previous state. Stored in a ref to avoid re-renders.
+  const undoStackRef = useRef<BrandBook[]>([])
+  const [undoVersion, setUndoVersion] = useState(0)
+  const canUndo = undoStackRef.current.length > 0
 
   const reloadBrand = useCallback(async () => {
     try {
@@ -54,7 +66,9 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
       if (!res.ok) throw new Error(`book HTTP ${res.status}`)
       setBook((await res.json()) as BrandBook)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+      toast.error(`Couldn't reload brand book: ${msg}`)
     }
   }, [brandSlug])
 
@@ -89,50 +103,79 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
         },
       )
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
+        if (!cancelled) {
+          const msg = err instanceof Error ? err.message : String(err)
+          setError(msg)
+          toast.error(`Couldn't load brand: ${msg}`)
+        }
       })
     return () => {
       cancelled = true
     }
   }, [brandSlug])
 
+  /** Push the current book onto the undo stack (call BEFORE a mutation). */
+  const snapshotBook = useCallback(() => {
+    if (!book) return
+    undoStackRef.current.push(book)
+    if (undoStackRef.current.length > UNDO_LIMIT) undoStackRef.current.shift()
+    setUndoVersion((v) => v + 1)
+  }, [book])
+
   const patchPage = useCallback(
     async (pageId: string, patch: Partial<BrandPage>) => {
-      const res = await fetch(
-        `/api/brands/${encodeURIComponent(brandSlug)}/book/pages/${encodeURIComponent(pageId)}`,
-        {
-          method: 'PATCH',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(patch),
-        },
-      )
-      if (!res.ok) {
-        console.error('[brand-book] page patch failed', res.status)
-        return
+      snapshotBook()
+      setSaving(true)
+      try {
+        const res = await fetch(
+          `/api/brands/${encodeURIComponent(brandSlug)}/book/pages/${encodeURIComponent(pageId)}`,
+          {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(patch),
+          },
+        )
+        if (!res.ok) {
+          toast.error(`Couldn't save page (HTTP ${res.status})`)
+          return
+        }
+        const updated = (await res.json()) as BrandPage
+        setBook((prev) =>
+          prev
+            ? { ...prev, pages: prev.pages.map((p) => (p.id === pageId ? updated : p)) }
+            : prev,
+        )
+        setLastSavedAt(Date.now())
+      } catch (err) {
+        toast.error(`Network error while saving: ${err instanceof Error ? err.message : err}`)
+      } finally {
+        setSaving(false)
       }
-      const updated = (await res.json()) as BrandPage
-      setBook((prev) =>
-        prev
-          ? { ...prev, pages: prev.pages.map((p) => (p.id === pageId ? updated : p)) }
-          : prev,
-      )
     },
-    [brandSlug],
+    [brandSlug, snapshotBook],
   )
 
   const patchTokens = useCallback(
     async (delta: Partial<BrandTokens>) => {
-      const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/tokens`, {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(delta),
-      })
-      if (!res.ok) {
-        console.error('[brand-book] tokens patch failed', res.status)
-        return
+      setSaving(true)
+      try {
+        const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/tokens`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(delta),
+        })
+        if (!res.ok) {
+          toast.error(`Couldn't save tokens (HTTP ${res.status})`)
+          return
+        }
+        const data = (await res.json()) as { tokens: BrandTokens; versionNumber: number }
+        setTokens(data.tokens)
+        setLastSavedAt(Date.now())
+      } catch (err) {
+        toast.error(`Network error while saving tokens: ${err instanceof Error ? err.message : err}`)
+      } finally {
+        setSaving(false)
       }
-      const data = (await res.json()) as { tokens: BrandTokens; versionNumber: number }
-      setTokens(data.tokens)
     },
     [brandSlug],
   )
@@ -147,6 +190,58 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
       /* keep previous assets on transient error */
     }
   }, [brandSlug])
+
+  /**
+   * Undo the most recent book mutation. Pops the last snapshot, bulk-
+   * PATCHes the book pages back to that state, and refetches to sync
+   * the canonical version. Page CRUD via usePageOps also benefits — its
+   * reorderPages writes through PATCH /book which we can roll back here.
+   */
+  const undo = useCallback(async () => {
+    const prev = undoStackRef.current.pop()
+    if (!prev) return
+    setUndoVersion((v) => v + 1)
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/book`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pages: prev.pages }),
+      })
+      if (!res.ok) {
+        toast.error(`Undo failed (HTTP ${res.status})`)
+        return
+      }
+      await reloadBook()
+      toast.info('Undid last change')
+    } catch (err) {
+      toast.error(`Undo failed: ${err instanceof Error ? err.message : err}`)
+    } finally {
+      setSaving(false)
+    }
+  }, [brandSlug, reloadBook])
+
+  // ⌘Z / Ctrl+Z keyboard shortcut for undo. Only active in designer mode
+  // and not when the user is typing in an input / contentEditable.
+  useEffect(() => {
+    if (!designerEnabled) return
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return
+      const t = e.target as HTMLElement
+      if (
+        t.tagName === 'INPUT' ||
+        t.tagName === 'TEXTAREA' ||
+        t.tagName === 'SELECT' ||
+        t.isContentEditable
+      ) {
+        return
+      }
+      e.preventDefault()
+      void undo()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [designerEnabled, undo])
 
   // Sidebar active-state. Three cases:
   //   /b/<slug>                     → templates (currentFullPath = '__templates')
@@ -177,6 +272,10 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
       patchPage,
       patchTokens,
       reloadAssets,
+      saving,
+      lastSavedAt,
+      canUndo,
+      undo,
     }
   }, [
     book,
@@ -189,6 +288,12 @@ export function BrandBookLayout({ brandSlug, designerEnabled }: Props) {
     patchPage,
     patchTokens,
     reloadAssets,
+    saving,
+    lastSavedAt,
+    canUndo,
+    undo,
+    // canUndo is derived from undoVersion — listing it ensures memo recomputes.
+    undoVersion,
   ])
 
   if (error) {

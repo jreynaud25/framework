@@ -34,6 +34,14 @@ export interface BrandBookContextValue {
   patchTokens: (delta: Partial<BrandTokens>) => Promise<void>
   /** Refetch assets — call after upload / delete. */
   reloadAssets: () => Promise<void>
+
+  /** "Saving…" / last-saved feedback for the sidebar header. */
+  saving: boolean
+  lastSavedAt: number | null
+
+  /** Undo stack — last N book snapshots. canUndo + undo() exposed for ⌘Z. */
+  canUndo: boolean
+  undo: () => Promise<void>
 }
 
 export const BrandBookContext = createContext<BrandBookContextValue | null>(null)

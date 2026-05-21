@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { BrandPage } from '@framework/types'
 import { pageFullPath } from '@framework/types'
 import { useBrandContext, type BrandRecord } from '../brandContext'
+import { useBrandBookContext } from './brandBookContext'
 import { PageSettingsModal } from './designer/PageSettingsModal'
 import { BrandSettingsModal } from './designer/BrandSettingsModal'
 import { usePageOps } from './designer/usePageOps'
@@ -24,6 +25,16 @@ async function copyCurrentUrl(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+function ago(ts: number): string {
+  const s = Math.max(1, Math.round((Date.now() - ts) / 1000))
+  if (s < 5) return 'just now'
+  if (s < 60) return `${s}s ago`
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.round(m / 60)
+  return `${h}h ago`
 }
 
 /**
@@ -49,8 +60,16 @@ export function PageSidebar({
   const [shareFlash, setShareFlash] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<{ id: string; above: boolean } | null>(null)
   const { reloadBrand } = useBrandContext()
+  const { saving, lastSavedAt, canUndo, undo } = useBrandBookContext()
   const { reorderPages } = usePageOps()
   const navigate = useNavigate()
+  // Tick every 5s so "Saved 12s ago" updates without manual re-renders.
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!lastSavedAt) return
+    const id = window.setInterval(() => setTick((t) => t + 1), 5000)
+    return () => window.clearInterval(id)
+  }, [lastSavedAt])
   const search = designerEnabled ? { designer: '1' as const } : undefined
 
   /** Reorder helper: handle a drop given source + target within a sibling group. */
@@ -159,7 +178,27 @@ export function PageSidebar({
               Print
             </button>
           ) : null}
+          {designerEnabled ? (
+            <button
+              type="button"
+              className="fw-bbook__brand-head-btn"
+              disabled={!canUndo || saving}
+              onClick={() => void undo()}
+              title={canUndo ? 'Undo last change (⌘Z)' : 'Nothing to undo'}
+            >
+              ↶ Undo
+            </button>
+          ) : null}
         </div>
+        {designerEnabled ? (
+          <div className="fw-bbook__save-state">
+            {saving
+              ? <><span className="fw-bbook__save-dot is-saving" />Saving…</>
+              : lastSavedAt
+                ? <><span className="fw-bbook__save-dot is-saved" />Saved {ago(lastSavedAt)}</>
+                : <><span className="fw-bbook__save-dot" />Up to date</>}
+          </div>
+        ) : null}
       </header>
 
       <nav className="fw-bbook__nav" aria-label="Brand book sections">

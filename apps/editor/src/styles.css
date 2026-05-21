@@ -2500,3 +2500,95 @@ button.fw-bbook__brand-head-name-row:hover .fw-bbook__brand-head-edit { opacity:
   opacity: 0.75;
   letter-spacing: 0.08em;
 }
+
+/* ── Toast stack (top-right) ──────────────────────────── */
+.fw-toast-stack {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.fw-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  max-width: 360px;
+  min-width: 220px;
+  animation: fw-toast-in 180ms ease-out;
+}
+@keyframes fw-toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fw-toast__icon {
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.fw-toast__body {
+  flex: 1;
+  line-height: 1.4;
+}
+.fw-toast__close {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 0;
+  font-size: 16px;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 1;
+}
+.fw-toast__close:hover {
+  background: var(--bg-3);
+  color: var(--fg);
+}
+.fw-toast--success .fw-toast__icon { background: #16a34a; }
+.fw-toast--error   .fw-toast__icon { background: #b91c1c; }
+.fw-toast--info    .fw-toast__icon { background: var(--fg); color: var(--bg); }
+.fw-toast--success { border-color: rgba(22,163,74,0.3); }
+.fw-toast--error   { border-color: rgba(185,28,28,0.35); }
+
+/* ── Save-state indicator in sidebar header ──────────── */
+.fw-bbook__save-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--bbook-muted);
+}
+.fw-bbook__save-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--bbook-line-2);
+}
+.fw-bbook__save-dot.is-saved   { background: #16a34a; }
+.fw-bbook__save-dot.is-saving  {
+  background: #f59e0b;
+  animation: fw-pulse 800ms ease-in-out infinite;
+}
+@keyframes fw-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}

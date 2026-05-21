@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { BrandPage } from '@framework/types'
 import { useBrandBookContext } from '../brandBookContext'
-// (kept the BrandPage import — used by reorderPages params below)
+import { toast } from '../../toast'
 
 /**
  * Page CRUD on the current book. Pages are persisted through the brand
@@ -27,11 +27,12 @@ export function usePageOps() {
         },
       )
       if (!res.ok) {
-        console.error('[brand-book] create page failed', res.status)
+        toast.error(`Couldn't create page (HTTP ${res.status})`)
         return null
       }
       const page = (await res.json()) as BrandPage
       await reloadBook()
+      toast.success(`Created "${page.title}"`)
       return page
     },
     [brandSlug, reloadBook],
@@ -48,7 +49,7 @@ export function usePageOps() {
         },
       )
       if (!res.ok) {
-        console.error('[brand-book] update page failed', res.status)
+        toast.error(`Couldn't update page (HTTP ${res.status})`)
         return
       }
       await reloadBook()
@@ -63,10 +64,11 @@ export function usePageOps() {
         { method: 'DELETE' },
       )
       if (!res.ok) {
-        console.error('[brand-book] delete page failed', res.status)
+        toast.error(`Couldn't delete page (HTTP ${res.status})`)
         return false
       }
       await reloadBook()
+      toast.info('Page deleted')
       return true
     },
     [brandSlug, reloadBook],
@@ -95,7 +97,7 @@ export function usePageOps() {
         body: JSON.stringify({ pages: allPages }),
       })
       if (!res.ok) {
-        console.error('[brand-book] reorder failed', res.status)
+        toast.error(`Couldn't reorder pages (HTTP ${res.status})`)
         return
       }
       await reloadBook()
