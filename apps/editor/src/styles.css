@@ -211,6 +211,142 @@ button { cursor: pointer; }
   box-shadow: 0 -2px 0 var(--highlight) inset;
 }
 
+/* ========================================================
+   BRAND BOOK (client view)
+   Auto-rendered guidelines page. Themed from tokens.semantic
+   (page bg + fg) with tokens.colors.primary as accent.
+   ======================================================== */
+
+.fw-bb {
+  /* Full-bleed background takes over the layout's max-width container. */
+  margin: -3rem -2rem -3rem -2rem;  /* break out of the BrandLayout px-8 py-12 */
+  min-height: 100vh;
+}
+.fw-bb__band {
+  padding: 7rem 2rem 5rem;
+  text-align: center;
+}
+.fw-bb__band h1 {
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1;
+}
+.fw-bb__band p {
+  margin-top: 1.25rem;
+  font-size: 14px;
+  opacity: 0.75;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fw-bb__section {
+  padding: 5rem 2rem;
+  border-top: 1px solid rgba(127, 127, 127, 0.15);
+}
+.fw-bb__section h2 {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin: 0 0 2.5rem;
+}
+.fw-bb__section-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Color cards: hex on the color itself, with auto-contrast text. */
+.fw-bb__color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.fw-bb__color-card {
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-feature-settings: 'tnum';
+}
+.fw-bb__color-card .name {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.fw-bb__color-card .hex {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* Semantic table */
+.fw-bb__semantic {
+  display: grid;
+  grid-template-columns: 140px 32px 1fr;
+  gap: 8px 16px;
+  font-size: 13px;
+  align-items: center;
+}
+.fw-bb__semantic-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+/* Type specimen */
+.fw-bb__type-specimen + .fw-bb__type-specimen {
+  margin-top: 3rem;
+  border-top: 1px solid rgba(127, 127, 127, 0.1);
+  padding-top: 3rem;
+}
+.fw-bb__type-specimen-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 1.5rem;
+}
+.fw-bb__type-specimen-sample {
+  letter-spacing: -0.01em;
+}
+
+/* Logo gallery */
+.fw-bb__logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.fw-bb__logo-card {
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.15);
+  padding: 2rem;
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+}
+.fw-bb__logo-card img {
+  max-width: 80%;
+  max-height: 120px;
+  object-fit: contain;
+}
+.fw-bb__logo-meta {
+  margin-top: 0.5rem;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  opacity: 0.55;
+}
+
 /* Brand layout tab bar links */
 .fw-tab-link {
   padding: 8px 14px;
