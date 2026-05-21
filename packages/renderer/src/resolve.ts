@@ -1,9 +1,14 @@
 import type {
   BoxStyle,
   BrandTokens,
+  CornerRadii,
+  Effect,
+  Fill,
   Format,
+  GradientStop,
   HexColor,
   SlotValues,
+  Stroke,
   TextStyle,
   TypographyEntry,
 } from '@framework/types'
@@ -120,24 +125,179 @@ export function resolveBoxStyle(
   const out: React.CSSProperties = {}
   if (style.width !== undefined) out.width = style.width
   if (style.height !== undefined) out.height = style.height
-  if (style.background) {
+
+  // Background: new `fills` stack takes precedence over legacy `background`.
+  if (style.fills && style.fills.length > 0) {
+    Object.assign(out, fillsToCss(style.fills, tokens, slotValues))
+  } else if (style.background) {
     const bg = resolveColor(style.background, tokens, slotValues)
     if (bg) out.background = bg
   }
-  if (style.borderRadius !== undefined) out.borderRadius = style.borderRadius
-  if (style.border) {
+
+  // Corners: per-corner takes precedence
+  if (style.cornerRadii) {
+    out.borderRadius = cornersToCss(style.cornerRadii)
+  } else if (style.borderRadius !== undefined) {
+    out.borderRadius = style.borderRadius
+  }
+
+  // Strokes
+  const boxShadows: string[] = []
+  if (style.strokes && style.strokes.length > 0) {
+    const borderApplied = applyStrokes(style.strokes, out, boxShadows, tokens, slotValues)
+    if (!borderApplied && style.border) {
+      const c = resolveColor(style.border.color, tokens, slotValues) ?? style.border.color
+      out.border = `${style.border.width}px ${style.border.style ?? 'solid'} ${c}`
+    }
+  } else if (style.border) {
     const c = resolveColor(style.border.color, tokens, slotValues) ?? style.border.color
     out.border = `${style.border.width}px ${style.border.style ?? 'solid'} ${c}`
   }
-  if (style.shadow) out.boxShadow = style.shadow
+
+  // Effects: shadows stack into box-shadow, blurs into filter / backdrop-filter
+  const filters: string[] = []
+  const backdropFilters: string[] = []
+  if (style.effects && style.effects.length > 0) {
+    for (const e of style.effects) {
+      if (e.type === 'drop-shadow') {
+        boxShadows.push(`${e.x}px ${e.y}px ${e.blur}px ${e.spread}px ${e.color}`)
+      } else if (e.type === 'inner-shadow') {
+        boxShadows.push(`inset ${e.x}px ${e.y}px ${e.blur}px ${e.spread}px ${e.color}`)
+      } else if (e.type === 'layer-blur') {
+        filters.push(`blur(${e.radius}px)`)
+      } else if (e.type === 'background-blur') {
+        backdropFilters.push(`blur(${e.radius}px)`)
+      }
+    }
+  }
+
+  if (boxShadows.length > 0) {
+    out.boxShadow = (out.boxShadow ? out.boxShadow + ', ' : '') + boxShadows.join(', ')
+  } else if (style.shadow) {
+    out.boxShadow = style.shadow
+  }
+  if (filters.length > 0) out.filter = filters.join(' ')
+  if (backdropFilters.length > 0) {
+    out.backdropFilter = backdropFilters.join(' ')
+    // Safari
+    ;(out as React.CSSProperties & { WebkitBackdropFilter?: string }).WebkitBackdropFilter =
+      backdropFilters.join(' ')
+  }
+
   if (style.opacity !== undefined) out.opacity = style.opacity
-  if (style.rotation !== undefined) out.transform = `rotate(${style.rotation}deg)`
+
+  // Compose transform: translate (designer drag offset) + rotate.
+  const transforms: string[] = []
+  if (style.offset && (style.offset.x !== 0 || style.offset.y !== 0)) {
+    transforms.push(`translate(${style.offset.x}px, ${style.offset.y}px)`)
+  }
+  if (style.rotation !== undefined && style.rotation !== 0) {
+    transforms.push(`rotate(${style.rotation}deg)`)
+  }
+  if (transforms.length > 0) out.transform = transforms.join(' ')
+
   if (style.position) {
     out.position = 'absolute'
     out.left = style.position.x
     out.top = style.position.y
   }
   return out
+}
+
+function fillsToCss(
+  fills: Fill[],
+  tokens: BrandTokens,
+  slotValues?: SlotValues,
+): React.CSSProperties {
+  // Figma renders fills bottom→top. CSS background shorthand stacks
+  // top→bottom, so reverse. Solid colors become degenerate gradients so they
+  // can layer below image/gradient fills above them.
+  const layers: string[] = []
+  let solidBase: string | undefined
+
+  for (const fill of fills) {
+    if (fill.type === 'solid') {
+      const c = resolveColor(fill.color, tokens, slotValues) ?? fill.color
+      // The bottom-most opaque solid becomes background-color; further
+      // solids stack as degenerate gradients so semi-transparent layering
+      // works.
+      if (solidBase === undefined) solidBase = c
+      else layers.push(`linear-gradient(${c}, ${c})`)
+    } else if (fill.type === 'linear-gradient') {
+      layers.push(`linear-gradient(${fill.angle}deg, ${stopsToCss(fill.stops, tokens, slotValues)})`)
+    } else if (fill.type === 'radial-gradient') {
+      layers.push(`radial-gradient(circle, ${stopsToCss(fill.stops, tokens, slotValues)})`)
+    } else if (fill.type === 'image') {
+      // Without a hosted URL we can't render the image; emit a hint via a
+      // subtle striped placeholder so the designer sees something.
+      // The renderer that owns ImageNode/ImageResolver is the right place
+      // for fully-resolved image fills.
+      layers.push(
+        `repeating-linear-gradient(45deg, rgba(0,0,0,.04) 0 8px, rgba(0,0,0,.08) 8px 16px)`,
+      )
+    }
+  }
+
+  // Reverse so the first declared fill ends up on top — matches Figma's
+  // visual order if the extractor preserved index order bottom→top (which
+  // it does).
+  const out: React.CSSProperties = {}
+  if (layers.length > 0) {
+    out.backgroundImage = layers.reverse().join(', ')
+  }
+  if (solidBase !== undefined) out.backgroundColor = solidBase
+  return out
+}
+
+function stopsToCss(
+  stops: GradientStop[],
+  tokens: BrandTokens,
+  slotValues?: SlotValues,
+): string {
+  return stops
+    .map((s) => `${resolveColor(s.color, tokens, slotValues) ?? s.color} ${Math.round(s.position * 100)}%`)
+    .join(', ')
+}
+
+function cornersToCss(r: CornerRadii): string {
+  return `${r.tl}px ${r.tr}px ${r.br}px ${r.bl}px`
+}
+
+/**
+ * Apply strokes. CSS `border` is single-color/width and renders inside the
+ * box (eats into content area). Figma supports inside/center/outside:
+ *   - inside / center → emit CSS border (inside; visually close to center)
+ *   - outside         → emit an inset-free box-shadow ring (no layout shift)
+ *
+ * Returns true if any stroke was applied via `border:` (so the caller knows
+ * not to apply a legacy border too).
+ */
+function applyStrokes(
+  strokes: Stroke[],
+  out: React.CSSProperties,
+  boxShadows: string[],
+  tokens: BrandTokens,
+  slotValues?: SlotValues,
+): boolean {
+  let appliedBorder = false
+  for (const s of strokes) {
+    const color = resolveColor(s.color, tokens, slotValues) ?? s.color
+    if (s.position === 'outside') {
+      boxShadows.push(`0 0 0 ${s.weight}px ${color}`)
+    } else {
+      if (!appliedBorder) {
+        out.border = `${s.weight}px ${s.style ?? 'solid'} ${color}`
+        // Box-sizing border-box is the document default we set in the
+        // renderer root, so the border doesn't change layout for inside/center.
+        out.boxSizing = 'border-box'
+        appliedBorder = true
+      } else {
+        // Multiple strokes are rare; stack additional ones as outside rings.
+        boxShadows.push(`0 0 0 ${s.weight}px ${color}`)
+      }
+    }
+  }
+  return appliedBorder
 }
 
 /** Pick a hex from the brand palette by name; fall back to primary. */

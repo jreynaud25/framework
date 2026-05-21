@@ -9,54 +9,125 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DRouteImport } from './routes/d'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DIndexRouteImport } from './routes/d.index'
+import { Route as DNewRouteImport } from './routes/d.new'
 import { Route as CCompositionIdRouteImport } from './routes/c.$compositionId'
+import { Route as BBrandSlugRouteImport } from './routes/b.$brandSlug'
 
+const DRoute = DRouteImport.update({
+  id: '/d',
+  path: '/d',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DIndexRoute = DIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DRoute,
+} as any)
+const DNewRoute = DNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => DRoute,
 } as any)
 const CCompositionIdRoute = CCompositionIdRouteImport.update({
   id: '/c/$compositionId',
   path: '/c/$compositionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BBrandSlugRoute = BBrandSlugRouteImport.update({
+  id: '/b/$brandSlug',
+  path: '/b/$brandSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/d': typeof DRouteWithChildren
+  '/b/$brandSlug': typeof BBrandSlugRoute
   '/c/$compositionId': typeof CCompositionIdRoute
+  '/d/new': typeof DNewRoute
+  '/d/': typeof DIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/b/$brandSlug': typeof BBrandSlugRoute
   '/c/$compositionId': typeof CCompositionIdRoute
+  '/d/new': typeof DNewRoute
+  '/d': typeof DIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/d': typeof DRouteWithChildren
+  '/b/$brandSlug': typeof BBrandSlugRoute
   '/c/$compositionId': typeof CCompositionIdRoute
+  '/d/new': typeof DNewRoute
+  '/d/': typeof DIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/c/$compositionId'
+  fullPaths:
+    | '/'
+    | '/d'
+    | '/b/$brandSlug'
+    | '/c/$compositionId'
+    | '/d/new'
+    | '/d/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/c/$compositionId'
-  id: '__root__' | '/' | '/c/$compositionId'
+  to: '/' | '/b/$brandSlug' | '/c/$compositionId' | '/d/new' | '/d'
+  id:
+    | '__root__'
+    | '/'
+    | '/d'
+    | '/b/$brandSlug'
+    | '/c/$compositionId'
+    | '/d/new'
+    | '/d/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DRoute: typeof DRouteWithChildren
+  BBrandSlugRoute: typeof BBrandSlugRoute
   CCompositionIdRoute: typeof CCompositionIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/d': {
+      id: '/d'
+      path: '/d'
+      fullPath: '/d'
+      preLoaderRoute: typeof DRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/d/': {
+      id: '/d/'
+      path: '/'
+      fullPath: '/d/'
+      preLoaderRoute: typeof DIndexRouteImport
+      parentRoute: typeof DRoute
+    }
+    '/d/new': {
+      id: '/d/new'
+      path: '/new'
+      fullPath: '/d/new'
+      preLoaderRoute: typeof DNewRouteImport
+      parentRoute: typeof DRoute
     }
     '/c/$compositionId': {
       id: '/c/$compositionId'
@@ -65,11 +136,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CCompositionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/b/$brandSlug': {
+      id: '/b/$brandSlug'
+      path: '/b/$brandSlug'
+      fullPath: '/b/$brandSlug'
+      preLoaderRoute: typeof BBrandSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface DRouteChildren {
+  DNewRoute: typeof DNewRoute
+  DIndexRoute: typeof DIndexRoute
+}
+
+const DRouteChildren: DRouteChildren = {
+  DNewRoute: DNewRoute,
+  DIndexRoute: DIndexRoute,
+}
+
+const DRouteWithChildren = DRoute._addFileChildren(DRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DRoute: DRouteWithChildren,
+  BBrandSlugRoute: BBrandSlugRoute,
   CCompositionIdRoute: CCompositionIdRoute,
 }
 export const routeTree = rootRouteImport

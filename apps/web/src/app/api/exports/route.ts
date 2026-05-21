@@ -5,6 +5,9 @@ import { renderTemplateToSvg } from '@/server/render/satoriRender'
 import { loadDefaultFonts } from '@/server/render/fonts'
 import { mockBrandBySlug } from '@/server/mock-brands'
 import { sampleLayoutFor } from '@/server/render/sampleLayout'
+import { getPushedTemplate } from '@/server/template-store'
+import { getPushedBrandTokens } from '@/server/brand-tokens-store'
+import type { BrandTokens, LayoutNode } from '@framework/types'
 
 /**
  * POST /api/exports
@@ -55,20 +58,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid payload', issues: parsed.error.issues }, { status: 422 })
   }
 
-  const brand = mockBrandBySlug(parsed.data.brandSlug)
-  if (!brand) return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
-  const layout = sampleLayoutFor(parsed.data.templateSlug)
-  if (!layout) return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+  // Resolve the layout: prefer the freshly pushed template, then per-format
+  // variant if available, then fall back to the canned sample.
+  const pushed = getPushedTemplate(parsed.data.brandSlug, parsed.data.templateSlug)
+  let layoutNode: LayoutNode | undefined
+  if (pushed) {
+    const variant = pushed.variants?.find((v) => v.format === parsed.data.format)
+    layoutNode = variant?.layout ?? pushed.layout
+  }
+  if (!layoutNode) {
+    const sample = sampleLayoutFor(parsed.data.templateSlug)
+    layoutNode = sample?.layout
+  }
+  if (!layoutNode) return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+
+  // Resolve tokens: pushed > mock brand > minimal default.
+  const pushedTokens = getPushedBrandTokens(parsed.data.brandSlug)
+  const mockBrand = mockBrandBySlug(parsed.data.brandSlug)
+  const tokens: BrandTokens =
+    pushedTokens?.tokens ??
+    mockBrand?.tokens ??
+    ({
+      colors: { primary: '#000', palette: [], semantic: { bg: '#fff', fg: '#000', accent: '#000' } },
+      typography: {
+        body: {
+          fontFamily: 'Inter',
+          fontTokenKey: 'body',
+          weights: [400],
+          defaultWeight: 400,
+          scale: [16, 14],
+          lineHeight: 1.4,
+        },
+      },
+      spacing: { unit: 8, scale: [4, 8, 16] },
+      logos: [],
+    } satisfies BrandTokens)
 
   const fonts = await loadDefaultFonts()
   const svg = await renderTemplateToSvg({
-    layout: layout.layout,
-    tokens: brand.tokens,
+    layout: layoutNode,
+    tokens,
     slotValues: (parsed.data.slotValues ?? {}) as never,
     format: parsed.data.format,
     fonts,
-    imageResolver: (r2Key) =>
-      `${process.env.R2_PUBLIC_BASE ?? 'https://cdn.frame-work.app'}/${r2Key}`,
+    imageResolver: (r2Key) => {
+      // data: / blob: / http(s):// pass through unchanged. blob: won't actually
+      // resolve server-side, but data: works for client-uploaded images.
+      if (/^(data:|blob:|https?:\/\/)/.test(r2Key)) return r2Key
+      return `${process.env.R2_PUBLIC_BASE ?? 'https://cdn.frame-work.app'}/${r2Key}`
+    },
   })
 
   if (parsed.data.mime === 'svg') {

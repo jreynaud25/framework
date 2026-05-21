@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import { renameSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /**
@@ -17,7 +18,19 @@ const target = process.env.FW_BUILD_TARGET ?? 'code'
 
 export default target === 'ui'
   ? defineConfig({
-      plugins: [viteSingleFile()],
+      plugins: [
+        viteSingleFile(),
+        // vite emits the HTML under its source filename (index.html); the
+        // Figma manifest expects dist/ui.html. Rename after writing.
+        {
+          name: 'rename-ui-html',
+          closeBundle() {
+            const src = resolve(__dirname, 'dist/index.html')
+            const dst = resolve(__dirname, 'dist/ui.html')
+            if (existsSync(src)) renameSync(src, dst)
+          },
+        },
+      ],
       root: resolve(__dirname, 'src/ui'),
       build: {
         outDir: resolve(__dirname, 'dist'),

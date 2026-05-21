@@ -2,15 +2,603 @@
 
 :root {
   color-scheme: dark;
-  --bg: #0a0a0a;
-  --fg: #fafafa;
-  --muted: #737373;
-  --line: #1f1f1f;
+  /* Paul Soulhiard's #000e = #000000EE — near-black with subtle transparency. */
+  --bg: #000000;
+  --bg-2: #0c0c0c;
+  --bg-3: #161616;
+  --bg-4: #1f1f1f;
+  --fg: #ededed;
+  --fg-2: #b8b8b8;
+  --muted: #6e6e6e;
+  --line: #1c1c1c;
+  --line-2: #2a2a2a;
+  --accent: #ffffff;
+  --accent-fg: #000000;
+  --highlight: #6ee7b7;
+  --danger: #ff5c5c;
 }
 
-html, body, #root { height: 100%; background: var(--bg); color: var(--fg); }
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+}
 body {
-  font: 14px/1.4 -apple-system, 'SF Pro Text', system-ui, sans-serif;
+  font: 12px/1.45 -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01', 'cv11';
 }
 * { box-sizing: border-box; }
+
+input, textarea, select, button { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* ========================================================
+   SIDEBAR
+   ======================================================== */
+
+.fw-section {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+
+/* Row: label on left, value/control on right.
+   Label takes its content width; value fills the rest. */
+.fw-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  min-height: 40px;
+}
+.fw-row__label {
+  color: var(--fg-2);
+  font-size: 13px;
+  flex: 0 0 auto;
+  min-width: 80px;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fw-row__value {
+  color: var(--fg);
+  font-size: 13px;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.fw-row__delete {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: all 100ms ease;
+}
+.fw-row__delete:hover {
+  background: var(--bg-3);
+  color: var(--danger);
+}
+
+/* Stacked variant: label on top, input full-width below — used for text
+   slots where the content can be a full sentence and needs the entire
+   sidebar width to be readable. */
+.fw-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 0;
+}
+.fw-stack__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fw-stack .fw-row__label {
+  min-width: 0;
+  max-width: none;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.fw-stack .fw-input--text {
+  font-size: 14px;
+  padding: 11px 14px;
+  line-height: 1.4;
+}
+.fw-input--textarea {
+  font-family: inherit;
+  display: block;
+  min-height: 40px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* BIGGER inputs — clearly clickable fields, comfortable hit area. */
+.fw-input {
+  background: var(--bg-3);
+  border: 1px solid transparent;
+  padding: 9px 12px;
+  border-radius: 6px;
+  outline: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--fg);
+  width: 100%;
+  min-width: 0;
+  transition: background 80ms ease, border-color 80ms ease;
+}
+.fw-input:hover { background: var(--bg-4); }
+.fw-input:focus {
+  background: var(--bg-3);
+  border-color: var(--fg-2);
+}
+.fw-input::placeholder { color: var(--muted); }
+.fw-input--text { text-align: left; }
+
+/* Color swatch (clickable square) */
+.fw-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: outline 80ms ease;
+}
+.fw-swatch:hover { outline: 1px solid var(--fg-2); outline-offset: 2px; }
+.fw-swatch--lg {
+  width: 32px;
+  height: 32px;
+}
+.fw-swatch--add {
+  background: transparent;
+  border: 1px dashed var(--line-2);
+  color: var(--muted);
+  display: inline-grid;
+  place-items: center;
+  font-size: 14px;
+  line-height: 1;
+}
+.fw-swatch--add:hover {
+  border-color: var(--fg-2);
+  color: var(--fg);
+}
+
+/* Chip (format selector, choice slot) */
+.fw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: var(--bg-3);
+  font-size: 11px;
+  color: var(--fg-2);
+  transition: all 100ms ease;
+  font-variant-numeric: tabular-nums;
+}
+.fw-chip:hover { background: var(--bg-4); color: var(--fg); }
+.fw-chip[data-active='true'] {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* Section divider */
+.fw-divider {
+  height: 1px;
+  background: var(--line);
+}
+
+/* Drop target during slot reorder drag */
+.fw-row--drop-target {
+  box-shadow: 0 -2px 0 var(--highlight) inset;
+}
+
+/* ========================================================
+   BRAND TABLE (designer dashboard)
+   ======================================================== */
+
+.fw-brand-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fw-brand-table th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  letter-spacing: 0;
+}
+.fw-brand-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  vertical-align: middle;
+}
+.fw-brand-table tbody tr {
+  cursor: pointer;
+  transition: background 80ms ease;
+}
+.fw-brand-table tbody tr:hover {
+  background: var(--bg-2);
+}
+.fw-brand-table tbody tr:focus {
+  outline: none;
+  background: var(--bg-2);
+}
+
+.fw-brand-thumb {
+  flex: 0 0 auto;
+  width: 80px;
+  height: 50px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+}
+
+.fw-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+}
+
+/* ── Dashboard sort dropdown + view toggle ── */
+.fw-select-mini {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--fg);
+  font-size: 12px;
+  padding: 6px 28px 6px 10px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23888' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+}
+.fw-select-mini:hover { background-color: var(--bg-3); }
+.fw-select-mini:focus { outline: 1px solid var(--fg-2); outline-offset: -1px; }
+
+.fw-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-2);
+  padding: 2px;
+  gap: 2px;
+}
+.fw-view-toggle button {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 80ms ease;
+}
+.fw-view-toggle button:hover { color: var(--fg); }
+.fw-view-toggle button[data-active='true'] {
+  background: var(--bg-3);
+  color: var(--fg);
+}
+
+/* ── Brand grid cards (Figma-style) ── */
+.fw-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.fw-brand-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 100ms ease, transform 100ms ease;
+}
+.fw-brand-card:hover {
+  border-color: var(--fg-2);
+  transform: translateY(-1px);
+}
+
+.fw-brand-card__thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--bg-3);
+}
+.fw-brand-card__industry {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+}
+.fw-brand-card__meta {
+  padding: 10px 12px 12px;
+}
+
+/* Reserve right gutter for the × delete button when designer mode is on.
+   Without this, × overlaps the row's right-aligned content (e.g. the text
+   slot's "10/40" character counter or the value input). */
+.fw-slot-list--designer .fw-row,
+.fw-slot-list--designer .fw-stack {
+  padding-right: 28px;
+}
+
+/* ========================================================
+   BRAND HUB — grid of template cards
+   ======================================================== */
+
+.fw-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.fw-hub-card {
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+  display: flex;
+  flex-direction: column;
+}
+.fw-hub-card:hover {
+  border-color: var(--fg-2);
+  transform: translateY(-1px);
+}
+
+.fw-hub-card__thumb {
+  position: relative;
+  width: 100%;
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--line);
+  /* Max ratio cap so very tall canvases (e.g. 9:16) don't dominate the card. */
+  max-height: 320px;
+  overflow: hidden;
+}
+.fw-hub-card__thumb-inner {
+  position: absolute;
+  inset: 0;
+}
+
+.fw-hub-card__meta {
+  padding: 12px 14px 14px;
+}
+
+/* Block selection (designer mode) */
+.fw-designer [data-selected='true'] {
+  outline: 2px solid #4f9cf9 !important;
+  outline-offset: -2px;
+  cursor: move;
+}
+
+/* Client image-crop hint: cover-fit image slots invite a drag-to-pan. */
+img[data-framework-id] {
+  cursor: grab;
+}
+img[data-framework-id]:active {
+  cursor: grabbing;
+}
+.fw-designer img[data-framework-id] {
+  cursor: pointer; /* In designer, click toggles mark — no drag affordance. */
+}
+
+/* Inspector — tabs */
+.fw-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-3);
+  border-radius: 6px;
+}
+.fw-tab {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  transition: all 100ms ease;
+  text-align: center;
+}
+.fw-tab:hover { color: var(--fg-2); }
+.fw-tab[data-active='true'] {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Inspector — swatch grid */
+.fw-swatch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Gradient preview */
+.fw-gradient-preview {
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+/* Hex input adjacent to a color picker */
+.fw-hex-input {
+  background: var(--bg-3);
+  border: 1px solid transparent;
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  width: 96px;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--fg);
+  outline: none;
+}
+.fw-hex-input:focus { border-color: var(--fg-2); }
+
+/* Editable label (designer mode): subtle background on hover signals
+   click-to-rename. Inputs in editing state get a focus ring. */
+.fw-label--editable {
+  cursor: text;
+  border-radius: 3px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background 80ms ease, color 80ms ease;
+}
+.fw-label--editable:hover {
+  background: var(--bg-3);
+  color: var(--fg);
+}
+.fw-label--editing {
+  background: var(--bg-3);
+  border: 1px solid var(--fg-2);
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin: -2px -4px;
+  outline: none;
+  color: var(--fg);
+  width: 100%;
+}
+
+/* Plain inline text button (kept for sidebar small actions) */
+.fw-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--fg);
+  font-size: 12px;
+  transition: color 80ms ease;
+}
+.fw-btn:hover { color: var(--muted); }
+.fw-btn:disabled { color: var(--muted); cursor: not-allowed; }
+.fw-btn--ghost { color: var(--muted); }
+.fw-btn--ghost:hover { color: var(--fg); }
+
+/* ========================================================
+   TOPBAR — keyboard hints
+   ======================================================== */
+
+.fw-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 10px;
+  color: var(--fg-2);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.fw-key-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ========================================================
+   FLOATING DOCK — bottom-center over the canvas
+   ======================================================== */
+
+.fw-dock {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(12, 12, 12, 0.78);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.fw-dock__sep {
+  width: 1px;
+  height: 18px;
+  background: var(--line-2);
+  margin: 0 4px;
+}
+
+.fw-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: var(--fg-2);
+  font-size: 12px;
+  letter-spacing: -0.005em;
+  transition: background 100ms ease, color 100ms ease;
+}
+.fw-dock-btn:hover { background: var(--bg-4); color: var(--fg); }
+.fw-dock-btn:disabled { color: var(--muted); cursor: not-allowed; }
+.fw-dock-btn:disabled:hover { background: transparent; }
+.fw-dock-btn[data-primary='true'] {
+  background: var(--fg);
+  color: var(--bg);
+}
+.fw-dock-btn[data-primary='true']:hover { background: var(--accent); color: var(--accent-fg); }
+.fw-dock-btn[data-active='true'] {
+  background: var(--bg-4);
+  color: var(--fg);
+}
+.fw-dock-btn__progress {
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: var(--muted);
+}

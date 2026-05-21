@@ -219,9 +219,18 @@ function logoEl(node: LogoNode, args: RenderArgs): React.ReactElement | null {
   })
 }
 
-function resolveColor(ref: string | undefined, tokens: BrandTokens): string | undefined {
+function resolveColor(
+  ref: string | undefined,
+  tokens: BrandTokens,
+  slotValues?: SlotValues,
+): string | undefined {
   if (!ref) return undefined
   if (ref.startsWith('#')) return ref
+  if (ref.startsWith('slot:') && slotValues) {
+    const v = slotValues[ref.slice(5)]
+    if (v?.type === 'color') return v.hex
+    return undefined
+  }
   if (!ref.startsWith('colors.')) return ref
   const [first, second] = ref.split('.').slice(1)
   if (first === 'primary') return tokens.colors.primary
@@ -233,13 +242,14 @@ function resolveColor(ref: string | undefined, tokens: BrandTokens): string | un
 function resolveBoxStyle(
   style: FrameNode['style'] | undefined,
   tokens: BrandTokens,
+  slotValues?: SlotValues,
 ): React.CSSProperties {
   if (!style) return {}
   const out: React.CSSProperties = {}
   if (style.width !== undefined) out.width = style.width
   if (style.height !== undefined) out.height = style.height
   if (style.background) {
-    const bg = resolveColor(style.background as string, tokens)
+    const bg = resolveColor(style.background as string, tokens, slotValues)
     if (bg) out.background = bg
   }
   if (style.borderRadius !== undefined) out.borderRadius = style.borderRadius

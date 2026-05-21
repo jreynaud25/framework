@@ -28,5 +28,16 @@ export default defineConfig({
       '@framework/types': resolve(__dirname, '../../packages/types/src'),
     },
   },
-  server: { port: 3001 },
+  server: {
+    port: 3001,
+    // Forward /api/* to the Next.js web app so the editor can fetch live
+    // composition payloads with no CORS headache in dev. Override the
+    // target with VITE_API_PROXY_TARGET if web runs elsewhere.
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

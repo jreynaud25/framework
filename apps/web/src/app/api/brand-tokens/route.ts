@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { revalidateBrand } from '@/server/revalidate'
+import { savePushedBrandTokens } from '@/server/brand-tokens-store'
+import type { BrandTokens } from '@framework/types'
 
 /**
  * POST /api/brand-tokens
@@ -58,23 +60,29 @@ const PostBody = z.object({
   tokens: BrandTokensSchema,
 })
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
   let body: unknown
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return cors(NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }))
   }
 
   const parsed = PostBody.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid payload', issues: parsed.error.issues }, { status: 422 })
+    return cors(
+      NextResponse.json({ error: 'Invalid payload', issues: parsed.error.issues }, { status: 422 }),
+    )
   }
 
-  // TODO(week 2): authenticate (Clerk), authorize (linked studio), insert
-  // into brand_token_versions, bump version_number, write audit_log.
+  // TODO(week 2): authenticate (Clerk), authorize (linked studio), audit_log.
+  const saved = savePushedBrandTokens({
+    brandSlug: parsed.data.brandSlug,
+    sourceFigmaFileKey: parsed.data.sourceFigmaFileKey,
+    tokens: parsed.data.tokens as BrandTokens,
+  })
 
   // ISR: punch the cached brand hub so the new tokens render on next request.
   try {
@@ -83,13 +91,26 @@ export async function POST(req: NextRequest) {
     console.warn('[brand-tokens] revalidate failed', err)
   }
 
-  return NextResponse.json(
-    {
-      accepted: true,
-      brandSlug: parsed.data.brandSlug,
-      versionNumber: null,
-      revalidated: true,
-    },
-    { status: 202 },
+  return cors(
+    NextResponse.json(
+      {
+        accepted: true,
+        brandSlug: saved.brandSlug,
+        versionNumber: saved.versionNumber,
+        revalidated: true,
+      },
+      { status: 202 },
+    ),
   )
+}
+
+export function OPTIONS() {
+  return cors(new NextResponse(null, { status: 204 }))
+}
+
+function cors(res: NextResponse): NextResponse {
+  res.headers.set('Access-Control-Allow-Origin', '*')
+  res.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.headers.set('Access-Control-Allow-Headers', 'content-type')
+  return res
 }

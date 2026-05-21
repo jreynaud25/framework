@@ -43,6 +43,39 @@
         padding: 8px 10px; font: inherit;
       }
       input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+      input[type=email] {
+        width: 100%; background: transparent; color: var(--fg);
+        border: 1px solid var(--line); border-radius: 6px;
+        padding: 8px 10px; font: inherit;
+      }
+      input[type=email]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+      select {
+        width: 100%; background: transparent; color: var(--fg);
+        border: 1px solid var(--line); border-radius: 6px;
+        padding: 8px 10px; font: inherit;
+        appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23888' d='M0 0l5 6 5-6z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+      }
+      select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+      .link {
+        font: inherit; padding: 0; border: 0; background: 0;
+        color: var(--muted); font-size: 11px; cursor: pointer;
+      }
+      .link:hover { color: var(--fg); }
+      .industry-pills {
+        display: flex; gap: 4px; flex-wrap: wrap;
+      }
+      .industry-pills button {
+        padding: 4px 8px; border: 1px solid var(--line); background: transparent;
+        color: var(--muted); font-size: 11px; border-radius: 4px; cursor: pointer;
+      }
+      .industry-pills button:hover { color: var(--fg); }
+      .industry-pills button[data-active='true'] {
+        background: var(--accent); color: var(--accent-fg); border-color: var(--accent);
+      }
       .row { display: flex; gap: 8px; align-items: center; }
       .stack > * + * { margin-top: 12px; }
       .frame {
@@ -95,16 +128,34 @@
         <section class="panel" data-panel="template">
           <div class="stack">
             <div>
-              <label for="brand">Push to</label>
-              <input id="brand" type="text" placeholder="brand-slug" />
+              <label for="brand-select">Send to brand</label>
+              <select id="brand-select">
+                <option value="">— Loading brands —</option>
+              </select>
+              <div class="row" style="justify-content: space-between; margin-top: 6px;">
+                <button id="brand-new-toggle" type="button" class="link">+ Create new brand</button>
+                <button id="brand-refresh" type="button" class="link" title="Refresh brands">↻</button>
+              </div>
             </div>
+
+            <div id="brand-create-form" hidden>
+              <div class="stack" style="gap: 8px; padding: 10px; background: rgba(255,255,255,0.04); border-radius: 6px;">
+                <input id="new-brand-name" type="text" placeholder="Brand name" />
+                <div class="row" style="justify-content: space-between; align-items: center;">
+                  <span class="dim" style="font-size: 10px;">Configure details on the dashboard later</span>
+                  <button id="new-brand-submit" type="button" class="primary">Create</button>
+                </div>
+                <div id="new-brand-error" class="err" hidden></div>
+              </div>
+            </div>
+
             <div>
-              <label for="name">Name</label>
+              <label for="name">Template name <span style="opacity:.5">(auto-filled from frame)</span></label>
               <input id="name" type="text" placeholder="Spring Drop" />
             </div>
             <div>
-              <label>Selection</label>
-              <div id="selection" class="stack"><div class="empty">Select 1+ frames in Figma.</div></div>
+              <label>Selected frame</label>
+              <div id="selection" class="stack"><div class="empty">Click a frame in Figma to select it.</div></div>
             </div>
           </div>
         </section>
@@ -127,11 +178,15 @@
           <div class="stack">
             <div>
               <label for="endpoint">API endpoint</label>
-              <input id="endpoint" type="text" value="https://frame-work.app" />
+              <input id="endpoint" type="text" value="http://localhost:3000" />
+            </div>
+            <div>
+              <label for="editor-base">Editor URL</label>
+              <input id="editor-base" type="text" value="http://localhost:3001" />
             </div>
             <p class="empty">
-              Use <code>http://localhost:3000</code> in dev. The plugin calls this host for
-              <code>/api/brand-tokens</code> and <code>/api/templates</code>.
+              Dev defaults: API on <code>:3000</code> (Next.js), editor on <code>:3001</code> (Vite).
+              After a successful push, the plugin opens the editor URL automatically.
             </p>
           </div>
         </section>
@@ -141,7 +196,7 @@
 
       <footer>
         <button id="cancel">Close</button>
-        <button id="push" class="primary" disabled>Push</button>
+        <button id="push" class="primary" disabled>Push to browser</button>
       </footer>
     </div>
 
