@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { BrandPage } from '@framework/types'
 import { pageFullPath } from '@framework/types'
 import { useBrandContext, type BrandRecord } from '../brandContext'
+import { useBrandBookContext } from './brandBookContext'
 import { PageSettingsModal } from './designer/PageSettingsModal'
 import { BrandSettingsModal } from './designer/BrandSettingsModal'
 import { usePageOps } from './designer/usePageOps'
+import { onCommand } from './commandBus'
 
 interface Props {
   pages: BrandPage[]
@@ -24,6 +26,16 @@ async function copyCurrentUrl(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+function ago(ts: number): string {
+  const s = Math.max(1, Math.round((Date.now() - ts) / 1000))
+  if (s < 5) return 'just now'
+  if (s < 60) return `${s}s ago`
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.round(m / 60)
+  return `${h}h ago`
 }
 
 /**
@@ -47,14 +59,35 @@ export function PageSidebar({
   const [creating, setCreating] = useState(false)
   const [editingBrand, setEditingBrand] = useState(false)
   const [shareFlash, setShareFlash] = useState<string | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ id: string; above: boolean } | null>(null)
+  const [dropTarget, setDropTarget] = useState<
+    { id: string; zone: 'above' | 'below' | 'nest' } | null
+  >(null)
   const { reloadBrand } = useBrandContext()
-  const { reorderPages } = usePageOps()
+  const { saving, lastSavedAt, canUndo, undo } = useBrandBookContext()
+  const { reorderPages, updatePage } = usePageOps()
   const navigate = useNavigate()
+  // Tick every 5s so "Saved 12s ago" updates without manual re-renders.
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!lastSavedAt) return
+    const id = window.setInterval(() => setTick((t) => t + 1), 5000)
+    return () => window.clearInterval(id)
+  }, [lastSavedAt])
+
+  // Wire command-bus shortcuts (⌘N → new page, ⌘ palette → edit brand).
+  useEffect(() => {
+    if (!designerEnabled) return
+    const offNew = onCommand('new-page', () => setCreating(true))
+    const offEdit = onCommand('edit-brand', () => setEditingBrand(true))
+    return () => {
+      offNew()
+      offEdit()
+    }
+  }, [designerEnabled])
   const search = designerEnabled ? { designer: '1' as const } : undefined
 
   /** Reorder helper: handle a drop given source + target within a sibling group. */
-  const handleDrop = (
+  const handleReorderDrop = (
     parentId: string | null,
     siblings: BrandPage[],
     targetId: string,
@@ -75,6 +108,25 @@ export function PageSidebar({
     void reorderPages({ parentId, orderedSiblings: next, bookPages: pages })
   }
 
+  /** Nest a dragged page under the target page (cap at 1 level). */
+  const handleNestDrop = (targetId: string, draggedId: string) => {
+    if (draggedId === targetId) return
+    const dragged = pages.find((p) => p.id === draggedId)
+    const target = pages.find((p) => p.id === targetId)
+    if (!dragged || !target) return
+    if (target.parentId) {
+      // Target is already a child — refuse (would create 2-level nesting).
+      return
+    }
+    const hasChildren = pages.some((p) => p.parentId === draggedId)
+    if (hasChildren) {
+      // Can't nest a page that itself has children.
+      return
+    }
+    if (dragged.parentId === targetId) return // already there
+    void updatePage(draggedId, { parentId: targetId })
+  }
+
   /** Drag handlers factory for a page row in a given sibling group. */
   const dragHandlersFor = (page: BrandPage, siblings: BrandPage[], parentId: string | null) => ({
     draggable: designerEnabled,
@@ -89,17 +141,26 @@ export function PageSidebar({
       e.preventDefault()
       e.dataTransfer.dropEffect = 'move'
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-      const above = e.clientY < rect.top + rect.height / 2
-      setDropTarget({ id: page.id, above })
+      const ratio = (e.clientY - rect.top) / rect.height
+      // 0-25% = above, 25-75% = nest (only meaningful for top-level rows),
+      // 75-100% = below.
+      let zone: 'above' | 'below' | 'nest'
+      if (ratio < 0.25) zone = 'above'
+      else if (ratio > 0.75) zone = 'below'
+      else zone = parentId === null ? 'nest' : 'below'
+      setDropTarget({ id: page.id, zone })
     },
     onDragLeave: () => setDropTarget((d) => (d?.id === page.id ? null : d)),
     onDrop: (e: React.DragEvent) => {
       e.preventDefault()
       const draggedId = e.dataTransfer.getData('text/plain')
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-      const above = e.clientY < rect.top + rect.height / 2
+      const current = dropTarget
       setDropTarget(null)
-      handleDrop(parentId, siblings, page.id, above, draggedId)
+      if (current?.zone === 'nest') {
+        handleNestDrop(page.id, draggedId)
+      } else {
+        handleReorderDrop(parentId, siblings, page.id, current?.zone === 'above', draggedId)
+      }
     },
   })
 
@@ -159,7 +220,27 @@ export function PageSidebar({
               Print
             </button>
           ) : null}
+          {designerEnabled ? (
+            <button
+              type="button"
+              className="fw-bbook__brand-head-btn"
+              disabled={!canUndo || saving}
+              onClick={() => void undo()}
+              title={canUndo ? 'Undo last change (⌘Z)' : 'Nothing to undo'}
+            >
+              ↶ Undo
+            </button>
+          ) : null}
         </div>
+        {designerEnabled ? (
+          <div className="fw-bbook__save-state">
+            {saving
+              ? <><span className="fw-bbook__save-dot is-saving" />Saving…</>
+              : lastSavedAt
+                ? <><span className="fw-bbook__save-dot is-saved" />Saved {ago(lastSavedAt)}</>
+                : <><span className="fw-bbook__save-dot" />Up to date</>}
+          </div>
+        ) : null}
       </header>
 
       <nav className="fw-bbook__nav" aria-label="Brand book sections">
@@ -170,7 +251,7 @@ export function PageSidebar({
           const children = visible
             .filter((p) => p.parentId === page.id)
             .sort((a, b) => a.order - b.order)
-          const dropHere = dropTarget?.id === page.id ? dropTarget.above ? 'above' : 'below' : null
+          const dropHere = dropTarget?.id === page.id ? dropTarget.zone : null
           return (
             <div key={page.id} className="fw-bbook__nav-group">
               <div
@@ -207,8 +288,7 @@ export function PageSidebar({
                 <div className="fw-bbook__nav-children">
                   {children.map((child) => {
                     const childPath = pageFullPath(child, pages)
-                    const childDrop =
-                      dropTarget?.id === child.id ? (dropTarget.above ? 'above' : 'below') : null
+                    const childDrop = dropTarget?.id === child.id ? dropTarget.zone : null
                     return (
                       <div
                         key={child.id}

@@ -3,6 +3,7 @@ import type {
   Format,
   LayoutNode,
   SlotSchema,
+  TypographyEntry,
 } from '@framework/types'
 
 export interface SelectionSummary {
@@ -15,14 +16,8 @@ export interface ExtractTokensResult {
   warnings: string[]
 }
 
-/**
- * One frame the designer selected. Multiple variants = multiple formats
- * sharing the same content (slot keys are unified by layer name across all
- * variants so editing once propagates everywhere).
- */
 export interface TemplateVariant {
   format: Format
-  /** Optional human-readable label (renamable in the editor). */
   label?: string
   canvas: { width: number; height: number }
   layout: LayoutNode
@@ -35,50 +30,100 @@ export interface ExtractTemplateResult {
   figmaFileKey: string
   figmaNodeId: string
   formats: Format[]
-  /** Intrinsic pixel size of the canonical (first selected) frame. */
   canvas: { width: number; height: number }
   layoutSchema: LayoutNode
-  /** One entry per selected frame. variants[0] = canonical = layoutSchema. */
   variants: TemplateVariant[]
   slotSchema: SlotSchema
   warnings: string[]
 }
 
 export type AssetKind = 'logo' | 'photo' | 'pattern' | 'icon'
+export type LogoVariant = 'primary' | 'wordmark' | 'symbol' | 'monochrome' | 'inverted'
 
 export interface ExtractedAsset {
   kind: AssetKind
   variant?: string
   label: string
-  /** Data URL: data:image/svg+xml;base64,... or data:image/png;base64,... */
   dataUrl: string
   width: number
   height: number
 }
 
 /**
- * One push from the plugin can mix templates and assets (logos, photos…).
- * The sandbox classifies each selected node and returns both buckets.
- * The UI fires the right HTTP POSTs in parallel.
+ * Where a selected frame is heading. Designer chooses one per frame in
+ * the plugin UI; the sandbox extracts in the right shape and the UI
+ * dispatches to the right API endpoint.
  */
-export interface ExtractMixedResult {
-  templateResult?: ExtractTemplateResult
+export type Destination =
+  | { kind: 'logo'; variant: LogoVariant }
+  | { kind: 'photo' }
+  | { kind: 'pattern' }
+  | { kind: 'icon' }
+  | { kind: 'color'; name?: string }
+  | { kind: 'typography'; role: string }
+  | { kind: 'template' }
+  | { kind: 'ignore' }
+
+export type DestinationKind = Destination['kind']
+
+export interface FrameHints {
+  isText: boolean
+  isSolidRect: boolean
+  hasImageFill: boolean
+  hasSlots: boolean
+  size: { w: number; h: number }
+}
+
+/**
+ * Per-frame classification carried back to the UI. `suggested` is the
+ * plugin's best guess; designer can override via dropdown before pushing.
+ */
+export interface FrameClassification {
+  id: string
+  name: string
+  width: number
+  height: number
+  suggested: Destination
+  hints: FrameHints
+}
+
+export interface ClassifyResult {
+  frames: FrameClassification[]
+}
+
+/**
+ * Result of one destination-driven push request. Each bucket goes to its
+ * own API endpoint: assets → /assets, colors+typography → /tokens,
+ * templateResult → /templates.
+ */
+export interface PushBundle {
   assets: ExtractedAsset[]
+  colors: Array<{ name: string; hex: string }>
+  typography: Array<{ role: string; entry: TypographyEntry }>
+  templateResult?: ExtractTemplateResult
   warnings: string[]
 }
 
-/** Messages from the UI iframe → sandbox code. */
+/** UI → sandbox. */
 export type UIMessage =
   | { type: 'request-selection-summary' }
+  | { type: 'request-classify-selection' }
   | { type: 'request-extract-tokens' }
   | { type: 'request-extract-template'; payload: { name: string } }
-  | { type: 'request-extract-mixed'; payload: { name: string } }
+  | {
+      type: 'request-push-bundle'
+      payload: {
+        name: string
+        destinations: Array<{ id: string; destination: Destination }>
+      }
+    }
   | { type: 'close'; payload?: { message?: string } }
 
-/** Messages from the sandbox code → UI iframe. */
+/** Sandbox → UI. */
 export type PluginMessage =
   | { type: 'selection-summary'; payload: SelectionSummary }
+  | { type: 'classify-result'; payload: ClassifyResult }
   | { type: 'extract-tokens-result'; payload: ExtractTokensResult }
   | { type: 'extract-template-result'; payload: ExtractTemplateResult }
-  | { type: 'extract-mixed-result'; payload: ExtractMixedResult }
+  | { type: 'push-bundle-result'; payload: PushBundle }
   | { type: 'error'; payload: { message: string } }

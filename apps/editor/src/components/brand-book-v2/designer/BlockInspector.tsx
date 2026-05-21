@@ -609,6 +609,55 @@ function renderInspectorFor(block: Block, patch: any, roleOptions: { value: stri
         />
       )
 
+    case 'mediaLibrary':
+      return (
+        <>
+          <SelectField
+            label="Filter"
+            value={block.filter}
+            options={[
+              { value: 'all', label: 'All assets' },
+              { value: 'logo', label: 'Logos' },
+              { value: 'photo', label: 'Photography' },
+              { value: 'pattern', label: 'Patterns' },
+              { value: 'icon', label: 'Icons' },
+            ]}
+            onChange={(v) => patch({ filter: v })}
+          />
+          <SelectField
+            label="Columns"
+            value={String(block.columns ?? 3) as '2' | '3' | '4' | '5'}
+            options={[
+              { value: '2', label: '2' },
+              { value: '3', label: '3' },
+              { value: '4', label: '4' },
+              { value: '5', label: '5' },
+            ]}
+            onChange={(v) => patch({ columns: Number(v) as 2 | 3 | 4 | 5 })}
+          />
+          <SelectField
+            label="Aspect"
+            value={block.aspect ?? '4:3'}
+            options={[
+              { value: 'auto', label: 'Auto' },
+              { value: '1:1', label: '1:1' },
+              { value: '4:3', label: '4:3' },
+              { value: '16:9', label: '16:9' },
+            ]}
+            onChange={(v) => patch({ aspect: v })}
+          />
+          <ToggleField
+            label="Show labels"
+            value={block.showLabels ?? true}
+            onChange={(v) => patch({ showLabels: v })}
+          />
+          <p className="fw-bbook-edit__hint">
+            Every asset of the chosen kind shows up here automatically. Push from Figma → see it
+            here without manual wiring.
+          </p>
+        </>
+      )
+
     case 'embed':
       return (
         <>

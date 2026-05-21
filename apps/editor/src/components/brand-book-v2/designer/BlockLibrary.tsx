@@ -255,6 +255,12 @@ const ITEMS: { category: string; items: LibraryItem[] }[] = [
         defaults: (id) => ({ id, kind: 'downloads' }),
       },
       {
+        kind: 'mediaLibrary',
+        label: 'Media library',
+        hint: 'Auto-aggregates assets by kind',
+        defaults: (id) => ({ id, kind: 'mediaLibrary', filter: 'photo', columns: 3, aspect: '4:3', showLabels: true }),
+      },
+      {
         kind: 'embed',
         label: 'Embed',
         hint: 'Sandboxed HTML',

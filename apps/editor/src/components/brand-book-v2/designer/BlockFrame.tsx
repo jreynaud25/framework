@@ -176,6 +176,7 @@ const KIND_LABELS: Record<BlockKind, string> = {
   copyExamples: 'Copy examples',
   patternGrid: 'Pattern grid',
   downloads: 'Downloads',
+  mediaLibrary: 'Media library',
   embed: 'Embed',
 }
 

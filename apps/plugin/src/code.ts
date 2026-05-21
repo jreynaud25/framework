@@ -1,14 +1,18 @@
 import type {
+  Destination,
   ExtractedAsset,
-  ExtractMixedResult,
   ExtractTemplateResult,
   ExtractTokensResult,
+  FrameClassification,
   PluginMessage,
+  PushBundle,
   UIMessage,
 } from './types'
 import { extractBrandTokens } from './extract/tokens'
 import { extractTemplate, extractTemplateFromNodes } from './extract/template'
-import { extractAssetFromNode, parseAssetKind } from './extract/assets'
+import { exportAssetForDestination } from './extract/assets'
+import { classifyNode } from './extract/classify'
+import { extractColorFromNode, extractTypographyFromNode } from './extract/single-token'
 
 /**
  * Sandbox entrypoint. Cannot touch DOM/network directly — instead we send
@@ -16,7 +20,7 @@ import { extractAssetFromNode, parseAssetKind } from './extract/assets'
  * the HTTP POST to frame-work.app.
  */
 
-figma.showUI(__html__, { width: 360, height: 520, themeColors: true })
+figma.showUI(__html__, { width: 380, height: 600, themeColors: true })
 
 figma.ui.onmessage = async (msg: UIMessage): Promise<void> => {
   try {
@@ -26,6 +30,14 @@ figma.ui.onmessage = async (msg: UIMessage): Promise<void> => {
           type: 'selection-summary',
           payload: summarizeSelection(),
         })
+        return
+      }
+
+      case 'request-classify-selection': {
+        const frames: FrameClassification[] = figma.currentPage.selection
+          .filter(isClassifiable)
+          .map(classifyNode)
+        send({ type: 'classify-result', payload: { frames } })
         return
       }
 
@@ -41,9 +53,9 @@ figma.ui.onmessage = async (msg: UIMessage): Promise<void> => {
         return
       }
 
-      case 'request-extract-mixed': {
-        const result: ExtractMixedResult = await extractMixed(msg.payload.name)
-        send({ type: 'extract-mixed-result', payload: result })
+      case 'request-push-bundle': {
+        const result = await buildPushBundle(msg.payload.name, msg.payload.destinations)
+        send({ type: 'push-bundle-result', payload: result })
         return
       }
 
@@ -64,46 +76,100 @@ function send(msg: PluginMessage): void {
   figma.ui.postMessage(msg)
 }
 
-function summarizeSelection(): { count: number; frames: Array<{ id: string; name: string; w: number; h: number }> } {
+function isClassifiable(node: SceneNode): boolean {
+  return (
+    node.type === 'FRAME' ||
+    node.type === 'COMPONENT' ||
+    node.type === 'INSTANCE' ||
+    node.type === 'GROUP' ||
+    node.type === 'RECTANGLE' ||
+    node.type === 'TEXT'
+  )
+}
+
+function summarizeSelection(): {
+  count: number
+  frames: Array<{ id: string; name: string; w: number; h: number }>
+} {
   const frames = figma.currentPage.selection
-    .filter((n): n is FrameNode | ComponentNode | InstanceNode =>
-      n.type === 'FRAME' || n.type === 'COMPONENT' || n.type === 'INSTANCE',
-    )
-    .map((n) => ({ id: n.id, name: n.name, w: n.width, h: n.height }))
+    .filter(isClassifiable)
+    .map((n) => ({
+      id: n.id,
+      name: n.name,
+      w: 'width' in n ? n.width : 0,
+      h: 'height' in n ? n.height : 0,
+    }))
   return { count: frames.length, frames }
 }
 
 /**
- * Classify the current selection: assets (logo / photo / pattern / icon —
- * detected via layer-name convention) vs templates (everything else that
- * looks like a frame). Extract both buckets in parallel and return them
- * for the UI to POST to the right endpoints.
+ * Build the push bundle from per-frame destinations. Each destination is
+ * handled in its own way:
+ *   - logo / photo / pattern / icon → export as data URL
+ *   - color → read solid fill → palette entry
+ *   - typography → read text style → TypographyEntry under the chosen role
+ *   - template → collect for extractTemplateFromNodes
+ *   - ignore → skip
  */
-async function extractMixed(name: string): Promise<ExtractMixedResult> {
-  const warnings: string[] = []
+async function buildPushBundle(
+  name: string,
+  destinations: Array<{ id: string; destination: Destination }>,
+): Promise<PushBundle> {
+  const selectionById = new Map<string, SceneNode>(
+    figma.currentPage.selection.map((n) => [n.id, n]),
+  )
   const assets: ExtractedAsset[] = []
+  const colors: PushBundle['colors'] = []
+  const typography: PushBundle['typography'] = []
   const templateNodes: Array<FrameNode | ComponentNode> = []
+  const warnings: string[] = []
 
-  for (const node of figma.currentPage.selection) {
-    if (
-      node.type !== 'FRAME' &&
-      node.type !== 'COMPONENT' &&
-      node.type !== 'INSTANCE' &&
-      node.type !== 'GROUP'
-    ) {
+  for (const entry of destinations) {
+    const node = selectionById.get(entry.id)
+    if (!node) {
+      warnings.push(`Node ${entry.id} not in selection — skipped`)
       continue
     }
-    if (parseAssetKind(node.name)) {
-      try {
-        const asset = await extractAssetFromNode(node)
-        if (asset) assets.push(asset)
-      } catch (err) {
-        warnings.push(
-          `Couldn't extract "${node.name}": ${err instanceof Error ? err.message : String(err)}`,
-        )
+    const dest = entry.destination
+    if (dest.kind === 'ignore') continue
+
+    if (dest.kind === 'template') {
+      if (node.type === 'FRAME' || node.type === 'COMPONENT') {
+        templateNodes.push(node)
+      } else {
+        warnings.push(`Can't push "${node.name}" as template — only frames / components`)
       }
-    } else if (node.type === 'FRAME' || node.type === 'COMPONENT') {
-      templateNodes.push(node)
+      continue
+    }
+
+    if (dest.kind === 'color') {
+      const hex = extractColorFromNode(node)
+      if (!hex) {
+        warnings.push(`Can't extract color from "${node.name}" — no solid fill`)
+        continue
+      }
+      colors.push({ name: dest.name?.trim() || node.name, hex })
+      continue
+    }
+
+    if (dest.kind === 'typography') {
+      const entryT = extractTypographyFromNode(node)
+      if (!entryT) {
+        warnings.push(`Can't extract typography from "${node.name}" — not a text node`)
+        continue
+      }
+      typography.push({ role: dest.role, entry: entryT })
+      continue
+    }
+
+    // logo / photo / pattern / icon
+    try {
+      const asset = await exportAssetForDestination(node, dest)
+      if (asset) assets.push(asset)
+    } catch (err) {
+      warnings.push(
+        `Couldn't export "${node.name}": ${err instanceof Error ? err.message : String(err)}`,
+      )
     }
   }
 
@@ -113,10 +179,10 @@ async function extractMixed(name: string): Promise<ExtractMixedResult> {
     warnings.push(...templateResult.warnings)
   }
 
-  return { templateResult, assets, warnings }
+  return { assets, colors, typography, templateResult, warnings }
 }
 
-// Initial summary so the UI can render the selection list immediately.
+// Push the initial summary so the UI can render immediately.
 figma.on('selectionchange', () => {
   send({ type: 'selection-summary', payload: summarizeSelection() })
 })

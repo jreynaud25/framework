@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { HexColor } from '@framework/types'
 import { useBrandBookContext } from '../brandBookContext'
+import { toast } from '../../toast'
 
 /**
  * Shared input components for the BlockInspector. Each component is
@@ -211,37 +212,41 @@ export function AssetPicker({
     if (!files || files.length === 0) return
     setBusy(true)
     try {
-      const items = await Promise.all(
-        Array.from(files).map(
-          (f) =>
-            new Promise<{ kind: 'logo' | 'photo' | 'pattern' | 'icon'; label: string; dataUrl: string }>(
-              (resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () =>
-                  resolve({
-                    kind: kind ?? 'photo',
-                    label: f.name,
-                    dataUrl: reader.result as string,
-                  })
-                reader.onerror = reject
-                reader.readAsDataURL(f)
-              },
-            ),
-        ),
-      )
+      const items: Array<{ kind: 'logo' | 'photo' | 'pattern' | 'icon'; label: string; dataUrl: string }> = []
+      for (const f of Array.from(files)) {
+        if (f.size > 30 * 1024 * 1024) {
+          toast.error(`"${f.name}" is over 30 MB — skipped`)
+          continue
+        }
+        if (!/^image\//.test(f.type)) {
+          toast.error(`"${f.name}" is not an image — skipped`)
+          continue
+        }
+        // SVG stays as-is (no need to resize); raster goes through a
+        // canvas resize so we don't push 20MB+ base64 payloads.
+        const targetWidth = kind === 'photo' ? 2000 : 1200
+        const dataUrl =
+          f.type === 'image/svg+xml'
+            ? await readAsDataUrl(f)
+            : await resizeRasterImage(f, targetWidth)
+        items.push({ kind: kind ?? 'photo', label: f.name, dataUrl })
+      }
+      if (items.length === 0) return
       const res = await fetch(`/api/brands/${encodeURIComponent(brandSlug)}/assets`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ assets: items.map((it) => ({ ...it, source: 'editor' })) }),
       })
       if (!res.ok) {
-        console.error('[asset upload] HTTP', res.status)
+        toast.error(`Upload failed (HTTP ${res.status})`)
         return
       }
       const data = (await res.json()) as { assets: { id: string }[] }
       await reloadAssets()
-      // Auto-select the first uploaded one
+      toast.success(`Uploaded ${items.length} ${items.length > 1 ? 'assets' : 'asset'}`)
       if (data.assets[0]?.id) onChange(data.assets[0].id)
+    } catch (err) {
+      toast.error(`Upload error: ${err instanceof Error ? err.message : err}`)
     } finally {
       setBusy(false)
     }
@@ -282,15 +287,42 @@ export function AssetPicker({
           <span className="fw-bbook-edit__asset-empty">no {kind ?? 'asset'} assets — click + to upload</span>
         ) : (
           candidates.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              title={a.label}
-              className={`fw-bbook-edit__asset-tile ${value === a.id ? 'is-active' : ''}`}
-              onClick={() => onChange(a.id)}
-            >
-              <img src={a.dataUrl} alt={a.label} />
-            </button>
+            <span key={a.id} className="fw-bbook-edit__asset-tile-wrap">
+              <button
+                type="button"
+                title={a.label}
+                className={`fw-bbook-edit__asset-tile ${value === a.id ? 'is-active' : ''}`}
+                onClick={() => onChange(a.id)}
+              >
+                <img src={a.dataUrl} alt={a.label} />
+              </button>
+              <button
+                type="button"
+                className="fw-bbook-edit__asset-tile-del"
+                title="Delete asset"
+                onClick={async (e) => {
+                  e.stopPropagation()
+                  if (!confirm(`Delete "${a.label}"? It will disappear from every block that references it.`)) return
+                  try {
+                    const res = await fetch(
+                      `/api/brands/${encodeURIComponent(brandSlug)}/assets/${encodeURIComponent(a.id)}`,
+                      { method: 'DELETE' },
+                    )
+                    if (!res.ok) {
+                      toast.error(`Couldn't delete (HTTP ${res.status})`)
+                      return
+                    }
+                    if (value === a.id) onChange(undefined)
+                    await reloadAssets()
+                    toast.info('Asset deleted')
+                  } catch (err) {
+                    toast.error(`Delete failed: ${err instanceof Error ? err.message : err}`)
+                  }
+                }}
+              >
+                ×
+              </button>
+            </span>
           ))
         )}
       </div>
@@ -342,4 +374,50 @@ export function StringListField({
       </div>
     </div>
   )
+}
+
+/**
+ * Read a file as a data URL — used for vector formats (SVG) and as a
+ * fallback. For raster images, prefer resizeRasterImage which caps the
+ * payload size.
+ */
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+/**
+ * Decode a raster image, fit it into a max width (preserving aspect),
+ * re-encode as JPEG at 0.9 quality. Caps payload at ~hundreds of KB so we
+ * don't blow past Next.js's default body limit on multi-MB iPhone photos.
+ */
+async function resizeRasterImage(file: File, maxWidth: number): Promise<string> {
+  const sourceUrl = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = reject
+      i.src = sourceUrl
+    })
+    const scale = img.width > maxWidth ? maxWidth / img.width : 1
+    const w = Math.round(img.width * scale)
+    const h = Math.round(img.height * scale)
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('canvas not supported')
+    ctx.drawImage(img, 0, 0, w, h)
+    // PNG for files that were originally PNG (preserve transparency);
+    // JPEG for everything else (smaller).
+    const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+    return canvas.toDataURL(mime, 0.9)
+  } finally {
+    URL.revokeObjectURL(sourceUrl)
+  }
 }
