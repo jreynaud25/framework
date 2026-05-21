@@ -287,15 +287,42 @@ export function AssetPicker({
           <span className="fw-bbook-edit__asset-empty">no {kind ?? 'asset'} assets — click + to upload</span>
         ) : (
           candidates.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              title={a.label}
-              className={`fw-bbook-edit__asset-tile ${value === a.id ? 'is-active' : ''}`}
-              onClick={() => onChange(a.id)}
-            >
-              <img src={a.dataUrl} alt={a.label} />
-            </button>
+            <span key={a.id} className="fw-bbook-edit__asset-tile-wrap">
+              <button
+                type="button"
+                title={a.label}
+                className={`fw-bbook-edit__asset-tile ${value === a.id ? 'is-active' : ''}`}
+                onClick={() => onChange(a.id)}
+              >
+                <img src={a.dataUrl} alt={a.label} />
+              </button>
+              <button
+                type="button"
+                className="fw-bbook-edit__asset-tile-del"
+                title="Delete asset"
+                onClick={async (e) => {
+                  e.stopPropagation()
+                  if (!confirm(`Delete "${a.label}"? It will disappear from every block that references it.`)) return
+                  try {
+                    const res = await fetch(
+                      `/api/brands/${encodeURIComponent(brandSlug)}/assets/${encodeURIComponent(a.id)}`,
+                      { method: 'DELETE' },
+                    )
+                    if (!res.ok) {
+                      toast.error(`Couldn't delete (HTTP ${res.status})`)
+                      return
+                    }
+                    if (value === a.id) onChange(undefined)
+                    await reloadAssets()
+                    toast.info('Asset deleted')
+                  } catch (err) {
+                    toast.error(`Delete failed: ${err instanceof Error ? err.message : err}`)
+                  }
+                }}
+              >
+                ×
+              </button>
+            </span>
           ))
         )}
       </div>

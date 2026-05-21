@@ -2682,3 +2682,42 @@ button.fw-bbook__brand-head-name-row:hover .fw-bbook__brand-head-edit { opacity:
   color: var(--bbook-muted);
   font-family: ui-monospace, monospace;
 }
+
+/* ── Drag-to-nest zone indicator on page rows ─────────── */
+.fw-bbook__nav-row.is-drop-nest {
+  background: var(--bbook-fg);
+  color: var(--bbook-bg);
+  border-radius: 6px;
+}
+.fw-bbook__nav-row.is-drop-nest .fw-bbook__nav-item,
+.fw-bbook__nav-row.is-drop-nest .fw-bbook__nav-gear {
+  color: inherit;
+  background: transparent;
+}
+
+/* ── Asset delete button on hover ─────────────────────── */
+.fw-bbook-edit__asset-tile-wrap {
+  position: relative;
+  display: inline-block;
+}
+.fw-bbook-edit__asset-tile-del {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--bbook-danger);
+  color: #fff;
+  border: 0;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.fw-bbook-edit__asset-tile-wrap:hover .fw-bbook-edit__asset-tile-del {
+  display: inline-flex;
+}
