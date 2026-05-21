@@ -2030,3 +2030,49 @@ img[data-framework-id]:active {
   font-size: 11px;
   color: var(--bbook-muted);
 }
+
+/* ── Designer: sidebar row chrome (gear + add page) ──── */
+.fw-bbook__nav-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.fw-bbook__nav-row .fw-bbook__nav-item { flex: 1; }
+.fw-bbook__nav-gear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  color: var(--bbook-muted);
+  cursor: pointer;
+  font-size: 13px;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  opacity: 0;
+  display: grid;
+  place-items: center;
+}
+.fw-bbook__nav-row:hover .fw-bbook__nav-gear { opacity: 1; }
+.fw-bbook__nav-gear:hover {
+  background: var(--bbook-line);
+  color: var(--bbook-fg);
+}
+.fw-bbook__nav-add {
+  margin-top: 1rem;
+  padding: 8px 12px;
+  border: 1px dashed var(--bbook-line-2);
+  background: transparent;
+  color: var(--bbook-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.fw-bbook__nav-add:hover {
+  border-color: var(--bbook-fg);
+  color: var(--bbook-fg);
+}
